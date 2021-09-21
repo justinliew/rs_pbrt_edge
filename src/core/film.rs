@@ -645,6 +645,84 @@ impl Film {
         )
         .unwrap();
     }
+
+    pub fn get_image(&self, splat_scale: Float) -> (Vec<u8>, u32, u32) {
+        let mut rgb: Vec<Float> =
+            vec![0.0 as Float; (3 * self.cropped_pixel_bounds.area()) as usize];
+        let mut offset;
+        for p in &self.cropped_pixel_bounds {
+            // convert pixel XYZ color to RGB
+            assert!(pnt2_inside_exclusivei(p, &self.cropped_pixel_bounds));
+            let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
+            offset = ((p.x - self.cropped_pixel_bounds.p_min.x)
+                + (p.y - self.cropped_pixel_bounds.p_min.y) * width) as usize;
+            let pixel: &Pixel = &self.pixels.read().unwrap()[offset];
+
+            let start: usize = 3 * offset;
+            let mut rgb_array: [Float; 3] = [0.0 as Float; 3];
+            xyz_to_rgb(&pixel.xyz, &mut rgb_array); // TODO: Use 'rgb' directly.
+            rgb[start] = rgb_array[0];
+            rgb[start + 1] = rgb_array[1];
+            rgb[start + 2] = rgb_array[2];
+            // normalize pixel with weight sum
+            let filter_weight_sum: Float = pixel.filter_weight_sum;
+            if filter_weight_sum != 0.0 as Float {
+                let inv_wt: Float = 1.0 as Float / filter_weight_sum;
+                rgb[start] = (rgb[start] * inv_wt).max(0.0 as Float);
+                rgb[start + 1] = (rgb[start + 1] * inv_wt).max(0.0 as Float);
+                rgb[start + 2] = (rgb[start + 2] * inv_wt).max(0.0 as Float);
+            }
+            // add splat value at pixel
+            let mut splat_rgb: [Float; 3] = [0.0 as Float; 3];
+            let pixel_splat_xyz: &[Float; 3] = &pixel.splat_xyz;
+            let splat_xyz: [Float; 3] = [
+                *pixel_splat_xyz.index(0),
+                *pixel_splat_xyz.index(1),
+                *pixel_splat_xyz.index(2),
+            ];
+            xyz_to_rgb(&splat_xyz, &mut splat_rgb);
+            rgb[start] += splat_scale * splat_rgb[0];
+            rgb[start + 1] += splat_scale * splat_rgb[1];
+            rgb[start + 2] += splat_scale * splat_rgb[2];
+            // scale pixel value by _scale_
+            rgb[start] *= self.scale;
+            rgb[start + 1] *= self.scale;
+            rgb[start + 2] *= self.scale;
+        }
+        // TODO: pbrt::WriteImage(filename, &rgb[0], croppedPixelBounds, fullResolution);
+        let mut buffer: Vec<u8> = vec![0.0 as u8; (3 * self.cropped_pixel_bounds.area()) as usize];
+        // 8-bit format; apply gamma (see WriteImage(...) in imageio.cpp)
+        let width: u32 =
+            (self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x) as u32;
+        let height: u32 =
+            (self.cropped_pixel_bounds.p_max.y - self.cropped_pixel_bounds.p_min.y) as u32;
+        for y in 0..height {
+            for x in 0..width {
+                // red
+                let index: usize = (3 * (y * width + x)) as usize;
+                buffer[index] = clamp_t(
+                    255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                    0.0 as Float,
+                    255.0 as Float,
+                ) as u8;
+                // green
+                let index: usize = (3 * (y * width + x) + 1) as usize;
+                buffer[index] = clamp_t(
+                    255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                    0.0 as Float,
+                    255.0 as Float,
+                ) as u8;
+                // blue
+                let index: usize = (3 * (y * width + x) + 2) as usize;
+                buffer[index] = clamp_t(
+                    255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                    0.0 as Float,
+                    255.0 as Float,
+                ) as u8;
+            }
+        }
+		(buffer, width, height)
+    }
     // pub fn get_pixel<'a>(&self, p: &Point2i) -> &'a Pixel {
     //     assert!(pnt2_inside_exclusivei(p, &self.cropped_pixel_bounds));
     //     let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;

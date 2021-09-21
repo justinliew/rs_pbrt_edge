@@ -127,6 +127,9 @@ pub struct ApiState {
     pushed_transforms: Vec<TransformSet>,
     pushed_active_transform_bits: Vec<u8>,
     param_set: ParamSet,
+	pub output: Vec<u8>,
+	pub width: u32,
+	pub height: u32,
 }
 
 impl Default for ApiState {
@@ -163,6 +166,9 @@ impl Default for ApiState {
             pushed_transforms: Vec::new(),
             pushed_active_transform_bits: Vec::new(),
             param_set: ParamSet::default(),
+			output: vec![],
+			width: 0,
+			height: 0,
         }
     }
 }
@@ -2322,7 +2328,7 @@ pub fn pbrt_init(
     (api_state, bsdf_state)
 }
 
-pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) {
+pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) -> (Vec<u8>, u32, u32) {
     // println!("WorldEnd");
     assert!(
         api_state.pushed_graphics_states.is_empty(),
@@ -2339,7 +2345,7 @@ pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) {
     if let Some(mut integrator) = some_integrator {
         let scene = api_state.render_options.make_scene();
         let num_threads: u8 = api_state.number_of_threads;
-        integrator.render(&scene, num_threads);
+        return integrator.render(&scene, num_threads);
     } else {
         panic!("Unable to create integrator.");
     }

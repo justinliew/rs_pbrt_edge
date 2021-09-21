@@ -24,6 +24,8 @@ pub mod textures;
 // parser
 use pest::Parser;
 
+use wasm_bindgen::prelude::*;
+
 // command line options
 use structopt::StructOpt;
 // pbrt
@@ -501,7 +503,15 @@ fn parse_line(
             "WorldEnd" => {
                 // WorldEnd
                 println!("{} {}", identifier, str_buf);
-                pbrt_cleanup(api_state, integrator_arg);
+
+				// output: Vec<u8>,
+				// width: u32,
+				// height: u32,
+
+				let (output,width,height) = pbrt_cleanup(api_state, integrator_arg);
+				api_state.output = output;
+				api_state.width = width;
+				api_state.height = height;
             }
             _ => println!("{} {:?}", identifier, str_buf),
         }
@@ -1008,8 +1018,8 @@ mod tests {
 	}
 }
 
-#[no_mangle]
-pub extern "C" fn lib_entry() {
+#[wasm_bindgen]
+pub fn lib_entry() -> Vec<u8> {
     // handle command line options
     // let args = Cli::from_args();
     // let pixelsamples: u32 = args.samples;
@@ -1046,7 +1056,7 @@ pub extern "C" fn lib_entry() {
 	Film "image"
 	  "integer xresolution" [ 500 ]
 	  "integer yresolution" [ 500 ]
-	Sampler "sobol" "integer pixelsamples" [8]
+	Sampler "sobol" "integer pixelsamples" [1]
 	Integrator "path"
 	WorldBegin
 	  # box_Material
@@ -1262,4 +1272,5 @@ pub extern "C" fn lib_entry() {
         "",
 		&None,
     );
+	api_state.output
 }
