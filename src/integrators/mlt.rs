@@ -17,7 +17,6 @@ use crate::core::scene::Scene;
 use crate::integrators::bdpt::Vertex;
 use crate::integrators::bdpt::{connect_bdpt, generate_camera_subpath, generate_light_subpath};
 // others
-use rayon::prelude::*;
 
 pub const CAMERA_STREAM_INDEX: u8 = 0;
 pub const LIGHT_STREAM_INDEX: u8 = 1;
@@ -407,7 +406,7 @@ impl MLTIntegrator {
     pub fn render(&self, scene: &Scene, num_threads: u8) {
         let mut num_cores: usize;
         let num_cores_init = if num_threads == 0_u8 {
-            num_cpus::get()
+			1
         } else {
             num_threads as usize
         };
@@ -427,50 +426,41 @@ impl MLTIntegrator {
                         bootstrap_weights.chunks_mut(chunk_size).collect();
                     let integrator = &self;
                     let light_distr = &light_distr;
-                    crossbeam::scope(|scope| {
-                        let (band_tx, band_rx) = crossbeam_channel::bounded(num_cores);
-                        // spawn worker threads
-                        for (b, band) in bands.into_iter().enumerate() {
-                            let band_tx = band_tx.clone();
-                            scope.spawn(move |_| {
-                                for (w, weight) in band.iter_mut().enumerate() {
-                                    let rng_index: u64 = ((b * chunk_size) + w) as u64;
-                                    let depth: u32 =
-                                        (rng_index % (integrator.max_depth + 1) as u64) as u32;
-                                    let mut sampler: Box<Sampler> =
-                                        Box::new(Sampler::MLT(MLTSampler::new(
-                                            integrator.mutations_per_pixel as i64,
-                                            rng_index,
-                                            integrator.sigma,
-                                            integrator.large_step_probability,
-                                            N_SAMPLE_STREAMS as i32,
-                                        )));
-                                    let mut p_raster: Point2f = Point2f::default();
-                                    *weight = integrator
-                                        .l(
-                                            scene,
-                                            light_distr.clone(),
-                                            &mut sampler,
-                                            depth,
-                                            &mut p_raster,
-                                        )
-                                        .y();
-                                }
-                            });
-                            // send progress through the channel to main thread
-                            band_tx
-                                .send(b)
-                                .unwrap_or_else(|_| panic!("Failed to send progress"));
+                    // crossbeam::scope(|scope| {
+                    //     let (band_tx, band_rx) = crossbeam_channel::bounded(num_cores);
+                    // spawn worker threads
+                    for (b, band) in bands.into_iter().enumerate() {
+                        // let band_tx = band_tx.clone();
+                        // scope.spawn(move |_| {
+                        for (w, weight) in band.iter_mut().enumerate() {
+                            let rng_index: u64 = ((b * chunk_size) + w) as u64;
+                            let depth: u32 = (rng_index % (integrator.max_depth + 1) as u64) as u32;
+                            let mut sampler: Box<Sampler> =
+                                Box::new(Sampler::MLT(MLTSampler::new(
+                                    integrator.mutations_per_pixel as i64,
+                                    rng_index,
+                                    integrator.sigma,
+                                    integrator.large_step_probability,
+                                    N_SAMPLE_STREAMS as i32,
+                                )));
+                            let mut p_raster: Point2f = Point2f::default();
+                            *weight = integrator
+                                .l(
+                                    scene,
+                                    light_distr.clone(),
+                                    &mut sampler,
+                                    depth,
+                                    &mut p_raster,
+                                )
+                                .y();
                         }
-                        // spawn thread to report progress
-                        scope.spawn(move |_| {
-                            for _ in pbr::PbIter::new(0..num_cores) {
-                                band_rx.recv().unwrap();
-                            }
-                        });
-                    })
-                    .unwrap();
+                    }
+                    //                            });
+                    // send progress through the channel to main thread
                 }
+                //     })
+                //     .unwrap();
+                // }
             }
             let bootstrap: Distribution1D = Distribution1D::new(bootstrap_weights);
             let b: Float = bootstrap.func_int * (self.max_depth + 1) as Float;
@@ -484,18 +474,13 @@ impl MLTIntegrator {
                 // TODO: ProgressReporter progress(nTotalMutations / progressFrequency,
                 //                           "Rendering");
                 // use parallel iterator (par_iter_with) from rayon crate
-                let (sender, receiver) = crossbeam_channel::bounded(num_cores);
+                //                let (sender, receiver) = crossbeam_channel::bounded(num_cores);
                 let n_chains = self.n_chains;
-                // spawn thread to report progress
-                let finish = thread::spawn(move || {
-                    for _ in pbr::PbIter::new(0..n_chains) {
-                        receiver.recv().unwrap();
-                    }
-                });
                 // for i in 0..n_chains {
                 let ivec: Vec<u32> = (0..n_chains).collect();
-                ivec.par_iter().for_each_with(sender, |s, &i| {
-                    s.send(i).unwrap_or_else(|_| panic!("Failed to send chain"));
+                for (s, &i) in ivec.iter().enumerate() {
+                    //                ivec.par_iter().for_each_with(sender, |s, &i| {
+                    //                  s.send(i).unwrap_or_else(|_| panic!("Failed to send chain"));
                     let n_chain_mutations: u64 = ((i as u64 + 1) * n_total_mutations
                         / n_chains as u64)
                         .min(n_total_mutations)
@@ -567,8 +552,7 @@ impl MLTIntegrator {
                         // }
                         // TODO: arena.Reset();
                     }
-                });
-                finish.join().unwrap();
+                }
             }
             // Store final image computed with MLT
             film.write_image(b / self.mutations_per_pixel as Float);

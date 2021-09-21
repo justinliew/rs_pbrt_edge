@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<body>
+	<div id="gamediv">
+		<canvas id="topbar" style='position:absolute; left:0px; top:0px; width: 100%; height: 10%'></canvas>
+		<canvas id="gamearea" style='position:absolute; left:0px; top:10%; width: 80%; height: 90%'></canvas>
+		<div id="leaderboardglobal" style='position:absolute; left:80%; top:10%; width: 50%; height: 50%'></div>
+		<div id="leaderboard" style='position:absolute; left:80%; top:60%; width: 50%; height: 50%'></div>
+	</div>
+
+	<script>
+		// Fetch and instantiate our wasm module
+		fetch("rs_pbrt.wasm").then(response =>
+			response.arrayBuffer()
+		).then(bytes =>
+			WebAssembly.instantiate(bytes, {})
+		).then(results => {
+			let mod = results.instance;
+			mod.exports.lib_entry();
+			console.log("DONE RENDERING");
+
+		});
+	</script>
+</body>
+
+</html>

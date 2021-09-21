@@ -1917,9 +1917,11 @@ fn get_shapes_and_materials(
         for item in &vi {
             if *item as usize >= p.len() {
                 panic!(
-                    "trianglemesh has out of-bounds vertex index {} ({} \"P\" values were given)",
+                    "trianglemesh has out of-bounds vertex index {} ({} \"P\" values were given) {:?} {:?}",
                     item,
-                    p.len()
+                    p.len(),
+					p,
+					vi
                 );
             }
         }

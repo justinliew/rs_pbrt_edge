@@ -865,7 +865,7 @@ impl BDPTIntegrator {
         if !scene.lights.is_empty() {
             let samples_per_pixel: i64 = self.sampler.get_samples_per_pixel();
             let num_cores = if num_threads == 0_u8 {
-                num_cpus::get()
+				1
             } else {
                 num_threads as usize
             };
@@ -885,182 +885,162 @@ impl BDPTIntegrator {
                 let camera = &self.get_camera();
                 let film = &film;
                 // let pixel_bounds = integrator.get_pixel_bounds().clone();
-                crossbeam::scope(|scope| {
-                    let (pixel_tx, pixel_rx) = crossbeam_channel::bounded(num_cores);
-                    // spawn worker threads
-                    for _ in 0..num_cores {
-                        let pixel_tx = pixel_tx.clone();
-                        scope.spawn(move |_| {
-                            while let Some((x, y)) = bq.next() {
-                                let tile: Point2i = Point2i {
-                                    x: x as i32,
-                                    y: y as i32,
-                                };
-                                let seed: i32 = tile.y * n_x_tiles + tile.x;
-                                let mut tile_sampler: Box<Sampler> =
-                                    sampler.clone_with_seed(seed as u64);
-                                let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
-                                let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
-                                let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
-                                let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
-                                let tile_bounds: Bounds2i = Bounds2i::new(
-                                    Point2i { x: x0, y: y0 },
-                                    Point2i { x: x1, y: y1 },
-                                );
-                                // println!("Starting image tile {:?}", tile_bounds);
-                                let mut film_tile = film.get_film_tile(&tile_bounds);
-                                for p_pixel in &tile_bounds {
-                                    tile_sampler.start_pixel(p_pixel);
-                                    if !pnt2_inside_exclusivei(p_pixel, &integrator.pixel_bounds) {
-                                        continue;
-                                    }
-                                    let mut done: bool = false;
-                                    while !done {
-                                        // Get a distribution for sampling
-                                        // the light at the start of the
-                                        // light subpath. Because the
-                                        // light path follows multiple
-                                        // bounces, basing the sampling
-                                        // distribution on any of the
-                                        // vertices of the camera path is
-                                        // unlikely to be a good
-                                        // strategy. We use the
-                                        // PowerLightDistribution by
-                                        // default here, which doesn't use
-                                        // the point passed to it. Now
-                                        // trace the light subpath
-                                        if let Some(light_distribution) =
-                                            create_light_sample_distribution(
-                                                integrator.get_light_sample_strategy(),
+                // crossbeam::scope(|scope| {
+                //     let (pixel_tx, pixel_rx) = crossbeam_channel::bounded(num_cores);
+                // spawn worker threads
+                for _ in 0..num_cores {
+                    //                        let pixel_tx = pixel_tx.clone();
+                    //                        scope.spawn(move |_| {
+                    while let Some((x, y)) = bq.next() {
+                        let tile: Point2i = Point2i {
+                            x: x as i32,
+                            y: y as i32,
+                        };
+                        let seed: i32 = tile.y * n_x_tiles + tile.x;
+                        let mut tile_sampler: Box<Sampler> = sampler.clone_with_seed(seed as u64);
+                        let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
+                        let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
+                        let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
+                        let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
+                        let tile_bounds: Bounds2i =
+                            Bounds2i::new(Point2i { x: x0, y: y0 }, Point2i { x: x1, y: y1 });
+                        // println!("Starting image tile {:?}", tile_bounds);
+                        let mut film_tile = film.get_film_tile(&tile_bounds);
+                        for p_pixel in &tile_bounds {
+                            tile_sampler.start_pixel(p_pixel);
+                            if !pnt2_inside_exclusivei(p_pixel, &integrator.pixel_bounds) {
+                                continue;
+                            }
+                            let mut done: bool = false;
+                            while !done {
+                                // Get a distribution for sampling
+                                // the light at the start of the
+                                // light subpath. Because the
+                                // light path follows multiple
+                                // bounces, basing the sampling
+                                // distribution on any of the
+                                // vertices of the camera path is
+                                // unlikely to be a good
+                                // strategy. We use the
+                                // PowerLightDistribution by
+                                // default here, which doesn't use
+                                // the point passed to it. Now
+                                // trace the light subpath
+                                if let Some(light_distribution) = create_light_sample_distribution(
+                                    integrator.get_light_sample_strategy(),
+                                    scene,
+                                ) {
+                                    // generate a single sample using BDPT
+                                    let p_film: Point2f = Point2f {
+                                        x: p_pixel.x as Float,
+                                        y: p_pixel.y as Float,
+                                    } + tile_sampler.get_2d();
+                                    // trace the camera subpath
+                                    let mut camera_vertices: Vec<Vertex> =
+                                        Vec::with_capacity((integrator.max_depth + 2) as usize);
+                                    let n_camera;
+                                    let p;
+                                    let time;
+                                    {
+                                        let (n_camera_new, p_new, time_new) =
+                                            generate_camera_subpath(
                                                 scene,
-                                            )
-                                        {
-                                            // generate a single sample using BDPT
-                                            let p_film: Point2f = Point2f {
-                                                x: p_pixel.x as Float,
-                                                y: p_pixel.y as Float,
-                                            } + tile_sampler.get_2d();
-                                            // trace the camera subpath
-                                            let mut camera_vertices: Vec<Vertex> =
-                                                Vec::with_capacity(
-                                                    (integrator.max_depth + 2) as usize,
-                                                );
-                                            let n_camera;
-                                            let p;
-                                            let time;
+                                                &mut tile_sampler,
+                                                integrator.max_depth + 2,
+                                                camera,
+                                                p_film,
+                                                &mut camera_vertices,
+                                            );
+                                        n_camera = n_camera_new;
+                                        p = p_new;
+                                        time = time_new;
+                                    }
+                                    let light_distr: Arc<Distribution1D> =
+                                        light_distribution.lookup(&p);
+                                    let mut light_vertices: Vec<Vertex> =
+                                        Vec::with_capacity((integrator.max_depth + 1) as usize);
+                                    let n_light;
+                                    {
+                                        n_light = generate_light_subpath(
+                                            scene,
+                                            &mut tile_sampler,
+                                            integrator.max_depth + 1,
+                                            time,
+                                            light_distr.clone(),
+                                            // light_to_index,
+                                            &mut light_vertices,
+                                        );
+                                    }
+                                    // Execute all BDPT connection strategies
+                                    let mut l: Spectrum = Spectrum::new(0.0 as Float);
+                                    // println!("n_camera = {:?}", n_camera);
+                                    // println!("n_light = {:?}", n_light);
+                                    for t in 1..=n_camera {
+                                        for s in 0..=n_light {
+                                            // int depth = t + s - 2;
+                                            let depth: isize = (t + s) as isize - 2;
+                                            if (s == 1 && t == 1)
+                                                || depth < 0
+                                                || depth > integrator.max_depth as isize
                                             {
-                                                let (n_camera_new, p_new, time_new) =
-                                                    generate_camera_subpath(
-                                                        scene,
-                                                        &mut tile_sampler,
-                                                        integrator.max_depth + 2,
-                                                        camera,
-                                                        p_film,
-                                                        &mut camera_vertices,
-                                                    );
-                                                n_camera = n_camera_new;
-                                                p = p_new;
-                                                time = time_new;
+                                                continue;
                                             }
-                                            let light_distr: Arc<Distribution1D> =
-                                                light_distribution.lookup(&p);
-                                            let mut light_vertices: Vec<Vertex> =
-                                                Vec::with_capacity(
-                                                    (integrator.max_depth + 1) as usize,
-                                                );
-                                            let n_light;
-                                            {
-                                                n_light = generate_light_subpath(
-                                                    scene,
-                                                    &mut tile_sampler,
-                                                    integrator.max_depth + 1,
-                                                    time,
-                                                    light_distr.clone(),
-                                                    // light_to_index,
-                                                    &mut light_vertices,
-                                                );
+                                            // execute the $(s, t)$ connection strategy and update _L_
+                                            let mut p_film_new: Point2f = Point2f {
+                                                x: p_film.x,
+                                                y: p_film.y,
+                                            };
+                                            let mut mis_weight: Option<Float> = Some(0.0 as Float);
+                                            let lpath: Spectrum = connect_bdpt(
+                                                scene,
+                                                &light_vertices,
+                                                &camera_vertices,
+                                                s,
+                                                t,
+                                                light_distr.clone(),
+                                                camera,
+                                                &mut tile_sampler,
+                                                &mut p_film_new,
+                                                mis_weight.as_mut(),
+                                            );
+                                            // if let Some(mis_weight_flt) = mis_weight {
+                                            //     println!("Connect bdpt s: {:?}, t: {:?}, lpath: {:?}, mis_weight: {:?}",
+                                            //              s, t, lpath, mis_weight_flt);
+                                            // }
+                                            // if (visualizeStrategies || visualizeWeights) {
+                                            //     Spectrum value;
+                                            //     if (visualizeStrategies)
+                                            //         value =
+                                            //             mis_weight == 0 ? 0 : lpath / mis_weight;
+                                            //     if (visualizeWeights) value = lpath;
+                                            //     weightFilms[BufferIndex(s, t)]->AddSplat(
+                                            //         pFilmNew, value);
+                                            // }
+                                            if t != 1 {
+                                                l += lpath;
+                                            } else if !lpath.is_black() {
+                                                film.add_splat(p_film_new, &lpath);
                                             }
-                                            // Execute all BDPT connection strategies
-                                            let mut l: Spectrum = Spectrum::new(0.0 as Float);
-                                            // println!("n_camera = {:?}", n_camera);
-                                            // println!("n_light = {:?}", n_light);
-                                            for t in 1..=n_camera {
-                                                for s in 0..=n_light {
-                                                    // int depth = t + s - 2;
-                                                    let depth: isize = (t + s) as isize - 2;
-                                                    if (s == 1 && t == 1)
-                                                        || depth < 0
-                                                        || depth > integrator.max_depth as isize
-                                                    {
-                                                        continue;
-                                                    }
-                                                    // execute the $(s, t)$ connection strategy and update _L_
-                                                    let mut p_film_new: Point2f = Point2f {
-                                                        x: p_film.x,
-                                                        y: p_film.y,
-                                                    };
-                                                    let mut mis_weight: Option<Float> =
-                                                        Some(0.0 as Float);
-                                                    let lpath: Spectrum = connect_bdpt(
-                                                        scene,
-                                                        &light_vertices,
-                                                        &camera_vertices,
-                                                        s,
-                                                        t,
-                                                        light_distr.clone(),
-                                                        camera,
-                                                        &mut tile_sampler,
-                                                        &mut p_film_new,
-                                                        mis_weight.as_mut(),
-                                                    );
-                                                    // if let Some(mis_weight_flt) = mis_weight {
-                                                    //     println!("Connect bdpt s: {:?}, t: {:?}, lpath: {:?}, mis_weight: {:?}",
-                                                    //              s, t, lpath, mis_weight_flt);
-                                                    // }
-                                                    // if (visualizeStrategies || visualizeWeights) {
-                                                    //     Spectrum value;
-                                                    //     if (visualizeStrategies)
-                                                    //         value =
-                                                    //             mis_weight == 0 ? 0 : lpath / mis_weight;
-                                                    //     if (visualizeWeights) value = lpath;
-                                                    //     weightFilms[BufferIndex(s, t)]->AddSplat(
-                                                    //         pFilmNew, value);
-                                                    // }
-                                                    if t != 1 {
-                                                        l += lpath;
-                                                    } else if !lpath.is_black() {
-                                                        film.add_splat(p_film_new, &lpath);
-                                                    }
-                                                }
-                                            }
-                                            // println!(
-                                            //     "Add film sample pFilm: {:?}, L: {:?}, (y: {:?})",
-                                            //     p_film,
-                                            //     l,
-                                            //     l.y()
-                                            // );
-                                            film_tile.add_sample(p_film, &mut l, 1.0 as Float);
-                                            done = !tile_sampler.start_next_sample();
                                         }
                                     }
+                                    // println!(
+                                    //     "Add film sample pFilm: {:?}, L: {:?}, (y: {:?})",
+                                    //     p_film,
+                                    //     l,
+                                    //     l.y()
+                                    // );
+                                    film_tile.add_sample(p_film, &mut l, 1.0 as Float);
+                                    done = !tile_sampler.start_next_sample();
                                 }
-                                // send the tile through the channel to main thread
-                                pixel_tx
-                                    .send(film_tile)
-                                    .unwrap_or_else(|_| panic!("Failed to send tile"));
                             }
-                        });
-                    }
-                    // spawn thread to collect pixels and render image to file
-                    scope.spawn(move |_| {
-                        for _ in pbr::PbIter::new(0..bq.len()) {
-                            let film_tile = pixel_rx.recv().unwrap();
-                            // merge image tile into _Film_
-                            film.merge_film_tile(&film_tile);
                         }
-                    });
-                })
-                .unwrap();
+                        // send the tile through the channel to main thread
+                        film.merge_film_tile(&film_tile);
+                    }
+                    //                        });
+                }
+                //     })
+                //     .unwrap();
             }
             film.write_image(1.0 as Float / samples_per_pixel as Float);
             // TODO: Write buffers for debug visualization

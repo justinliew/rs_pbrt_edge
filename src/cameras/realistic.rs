@@ -101,40 +101,33 @@ impl RealisticCamera {
         let n_samples: usize = 64;
         let mut exit_pupil_bounds: Vec<Bounds2f> = Vec::new();
         exit_pupil_bounds.resize(n_samples, Bounds2f::default());
-        let num_cores: usize = num_cpus::get();
+        let num_cores: usize = 1;
         let chunk_size: usize = n_samples / num_cores;
         {
             let bands: Vec<&mut [Bounds2f]> = exit_pupil_bounds.chunks_mut(chunk_size).collect();
             let camera = &camera;
             let film = &film;
-            crossbeam::scope(|scope| {
-                let (band_tx, band_rx) = crossbeam_channel::bounded(num_cores);
-                // spawn worker threads
-                for (b, band) in bands.into_iter().enumerate() {
-                    let band_tx = band_tx.clone();
-                    scope.spawn(move |_| {
-                        for (index, bound) in band.iter_mut().enumerate() {
-                            let i: usize = (b * chunk_size) + index;
-                            let r0: Float =
-                                i as Float / n_samples as Float * film.diagonal / 2.0 as Float;
-                            let r1: Float = (i + 1) as Float / n_samples as Float * film.diagonal
-                                / 2.0 as Float;
-                            *bound = camera.bound_exit_pupil(r0, r1);
-                        }
-                    });
-                    // send progress through the channel to main thread
-                    band_tx
-                        .send(b)
-                        .unwrap_or_else(|_| panic!("Failed to send progress"));
+            // crossbeam::scope(|scope| {
+            //     let (band_tx, band_rx) = crossbeam_channel::bounded(num_cores);
+            // spawn worker threads
+            for (b, band) in bands.into_iter().enumerate() {
+                //                let band_tx = band_tx.clone();
+                //                    scope.spawn(move |_| {
+                for (index, bound) in band.iter_mut().enumerate() {
+                    let i: usize = (b * chunk_size) + index;
+                    let r0: Float = i as Float / n_samples as Float * film.diagonal / 2.0 as Float;
+                    let r1: Float =
+                        (i + 1) as Float / n_samples as Float * film.diagonal / 2.0 as Float;
+                    *bound = camera.bound_exit_pupil(r0, r1);
                 }
-                // spawn thread to report progress
-                scope.spawn(move |_| {
-                    for _ in pbr::PbIter::new(0..num_cores) {
-                        band_rx.recv().unwrap();
-                    }
-                });
-            })
-            .unwrap();
+                //                    });
+                // send progress through the channel to main thread
+                // band_tx
+                //     .send(b)
+                //     .unwrap_or_else(|_| panic!("Failed to send progress"));
+            }
+            // })
+            // .unwrap();
         }
         camera.exit_pupil_bounds = exit_pupil_bounds;
         if camera.simple_weighting {
