@@ -1,0 +1,9 @@
+# This file describes a Fastly Compute@Edge package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = ["jliew+hack@fastly.com"]
+description = "PBRT workers on ECP"
+language = "other"
+manifest_version = 1
+name = "pbrt-ecp"
+service_id = "5P7lG0vw3lpYvFN8t5GkCh"
