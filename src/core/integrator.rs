@@ -6,6 +6,7 @@ use std::sync::Arc;
 // pbrt
 use crate::blockqueue::BlockQueue;
 use crate::core::camera::{Camera, CameraSample};
+use crate::core::film::{Film, FilmTile};
 use crate::core::geometry::{pnt2_inside_exclusivei, vec3_abs_dot_nrmf};
 use crate::core::geometry::{Bounds2i, Point2f, Point2i, Ray, Vector2i, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -25,7 +26,6 @@ use crate::integrators::path::PathIntegrator;
 use crate::integrators::sppm::SPPMIntegrator;
 use crate::integrators::volpath::VolPathIntegrator;
 use crate::integrators::whitted::WhittedIntegrator;
-use crate::core::film::{Film,FilmTile};
 
 // see integrator.h
 
@@ -37,14 +37,19 @@ pub enum Integrator {
 }
 
 impl Integrator {
-    pub fn render(&mut self, scene: &Scene, num_threads: u8) -> (Vec<u8>, u32, u32) {
+    pub fn render(
+        &mut self,
+        scene: &Scene,
+        num_threads: u8,
+        collector: bool,
+    ) -> (Vec<u8>, u32, u32) {
         match self {
-			// TODO return type for `get_image`
+            // TODO return type for `get_image`
             // Integrator::BDPT(integrator) => integrator.render(scene, num_threads),
             // Integrator::MLT(integrator) => integrator.render(scene, num_threads),
             // Integrator::SPPM(integrator) => integrator.render(scene, num_threads),
-            Integrator::Sampler(integrator) => integrator.render(scene, num_threads),
-			_ => (vec![], 0, 0)
+            Integrator::Sampler(integrator) => integrator.render(scene, num_threads, collector),
+            _ => (vec![], 0, 0),
         }
     }
 }
@@ -68,109 +73,121 @@ impl SamplerIntegrator {
         }
     }
 
-	pub fn render_tile<'a>(&self, x: u32, y: u32, n_tiles: Point2i, sample_bounds: Bounds2i, tile_size: i32, scene: &Scene, film: &'a Arc<Film>) -> FilmTile<'a> {
-		let tile: Point2i = Point2i {
-			x: x as i32,
-			y: y as i32,
-		};
-		let seed: i32 = tile.y * n_tiles.x + tile.x;
+    pub fn render_tile<'a>(
+        &self,
+        x: u32,
+        y: u32,
+        n_tiles: Point2i,
+        sample_bounds: Bounds2i,
+        tile_size: i32,
+        scene: &Scene,
+        film: &'a Arc<Film>,
+    ) -> FilmTile<'a> {
+        let tile: Point2i = Point2i {
+            x: x as i32,
+            y: y as i32,
+        };
+        let seed: i32 = tile.y * n_tiles.x + tile.x;
 
-		let sampler = &self.get_sampler();
-		let camera = &self.get_camera();
-		let pixel_bounds = &self.get_pixel_bounds();
-		let integrator = &self;
+        let sampler = &self.get_sampler();
+        let camera = &self.get_camera();
+        let pixel_bounds = &self.get_pixel_bounds();
+        let integrator = &self;
 
-		let mut tile_sampler: Box<Sampler> = sampler.clone_with_seed(0_u64);
-		tile_sampler.reseed(seed as u64);
-		let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
-		let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
-		let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
-		let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
-		let tile_bounds: Bounds2i =
-			Bounds2i::new(Point2i { x: x0, y: y0 }, Point2i { x: x1, y: y1 });
-		// println!("Starting image tile {:?}", tile_bounds);
-		let mut film_tile = film.get_film_tile(&tile_bounds);
-		for pixel in &tile_bounds {
-			tile_sampler.start_pixel(pixel);
-			if !pnt2_inside_exclusivei(pixel, &pixel_bounds) {
-				continue;
-			}
-			let mut done: bool = false;
-			while !done {
-				// let's use the copy_arena crate instead of pbrt's MemoryArena
-				// let mut arena: Arena = Arena::with_capacity(262144); // 256kB
+        let mut tile_sampler: Box<Sampler> = sampler.clone_with_seed(0_u64);
+        tile_sampler.reseed(seed as u64);
+        let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
+        let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
+        let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
+        let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
+        let tile_bounds: Bounds2i =
+            Bounds2i::new(Point2i { x: x0, y: y0 }, Point2i { x: x1, y: y1 });
+        // println!("Starting image tile {:?}", tile_bounds);
+        let mut film_tile = film.get_film_tile(&tile_bounds);
+        for pixel in &tile_bounds {
+            tile_sampler.start_pixel(pixel);
+            if !pnt2_inside_exclusivei(pixel, &pixel_bounds) {
+                continue;
+            }
+            let mut done: bool = false;
+            while !done {
+                // let's use the copy_arena crate instead of pbrt's MemoryArena
+                // let mut arena: Arena = Arena::with_capacity(262144); // 256kB
 
-				// initialize _CameraSample_ for current sample
-				let camera_sample: CameraSample = tile_sampler.get_camera_sample(pixel);
-				// generate camera ray for current sample
-				let mut ray: Ray = Ray::default();
-				let ray_weight: Float =
-					camera.generate_ray_differential(&camera_sample, &mut ray);
-				ray.scale_differentials(
-					1.0 as Float
-						/ (tile_sampler.get_samples_per_pixel() as Float).sqrt(),
-				);
-				// TODO: ++nCameraRays;
-				// evaluate radiance along camera ray
-				let mut l: Spectrum = Spectrum::new(0.0 as Float);
-				let y: Float = l.y();
-				if ray_weight > 0.0 {
-					// ADDED
-					let clipping_start: Float = camera.get_clipping_start();
-					if clipping_start > 0.0 as Float {
-						// adjust ray origin for near clipping
-						ray.o = ray.position(clipping_start);
-					}
-					// ADDED
-					l = integrator.li(
-						&mut ray,
-						scene,
-						&mut tile_sampler, // &mut arena,
-						0_i32,
-					);
-				}
-				if l.has_nans() {
-					println!(
-						"Not-a-number radiance value returned for pixel \
+                // initialize _CameraSample_ for current sample
+                let camera_sample: CameraSample = tile_sampler.get_camera_sample(pixel);
+                // generate camera ray for current sample
+                let mut ray: Ray = Ray::default();
+                let ray_weight: Float = camera.generate_ray_differential(&camera_sample, &mut ray);
+                ray.scale_differentials(
+                    1.0 as Float / (tile_sampler.get_samples_per_pixel() as Float).sqrt(),
+                );
+                // TODO: ++nCameraRays;
+                // evaluate radiance along camera ray
+                let mut l: Spectrum = Spectrum::new(0.0 as Float);
+                let y: Float = l.y();
+                if ray_weight > 0.0 {
+                    // ADDED
+                    let clipping_start: Float = camera.get_clipping_start();
+                    if clipping_start > 0.0 as Float {
+                        // adjust ray origin for near clipping
+                        ray.o = ray.position(clipping_start);
+                    }
+                    // ADDED
+                    l = integrator.li(
+                        &mut ray,
+                        scene,
+                        &mut tile_sampler, // &mut arena,
+                        0_i32,
+                    );
+                }
+                if l.has_nans() {
+                    println!(
+                        "Not-a-number radiance value returned for pixel \
 											({:?}, {:?}), sample {:?}. Setting to black.",
-						pixel.x,
-						pixel.y,
-						tile_sampler.get_current_sample_number()
-					);
-					l = Spectrum::new(0.0);
-				} else if y < -10.0e-5 as Float {
-					println!(
-						"Negative luminance value, {:?}, returned for pixel \
+                        pixel.x,
+                        pixel.y,
+                        tile_sampler.get_current_sample_number()
+                    );
+                    l = Spectrum::new(0.0);
+                } else if y < -10.0e-5 as Float {
+                    println!(
+                        "Negative luminance value, {:?}, returned for pixel \
 										({:?}, {:?}), sample {:?}. Setting to black.",
-						y,
-						pixel.x,
-						pixel.y,
-						tile_sampler.get_current_sample_number()
-					);
-					l = Spectrum::new(0.0);
-				} else if y.is_infinite() {
-					println!(
-						"Infinite luminance value returned for pixel ({:?}, \
+                        y,
+                        pixel.x,
+                        pixel.y,
+                        tile_sampler.get_current_sample_number()
+                    );
+                    l = Spectrum::new(0.0);
+                } else if y.is_infinite() {
+                    println!(
+                        "Infinite luminance value returned for pixel ({:?}, \
 										{:?}), sample {:?}. Setting to black.",
-						pixel.x,
-						pixel.y,
-						tile_sampler.get_current_sample_number()
-					);
-					l = Spectrum::new(0.0);
-				}
-				// println!("Camera sample: {:?} -> ray: {:?} -> L = {:?}",
-				//          camera_sample, ray, l);
-				// add camera ray's contribution to image
-				film_tile.add_sample(camera_sample.p_film, &mut l, ray_weight);
-				done = !tile_sampler.start_next_sample();
-			} // arena is dropped here !
-		}
-		film_tile
-	}
+                        pixel.x,
+                        pixel.y,
+                        tile_sampler.get_current_sample_number()
+                    );
+                    l = Spectrum::new(0.0);
+                }
+                // println!("Camera sample: {:?} -> ray: {:?} -> L = {:?}",
+                //          camera_sample, ray, l);
+                // add camera ray's contribution to image
+                film_tile.add_sample(camera_sample.p_film, &mut l, ray_weight);
+                done = !tile_sampler.start_next_sample();
+            } // arena is dropped here !
+        }
+        film_tile
+    }
     /// All [SamplerIntegrators](enum.SamplerIntegrator.html) use the
     /// same render loop, but call an individual
     /// [li()](enum.SamplerIntegrator.html#method.li) method.
-    pub fn render(&mut self, scene: &Scene, num_threads: u8) -> (Vec<u8>, u32, u32) {
+    pub fn render(
+        &mut self,
+        scene: &Scene,
+        num_threads: u8,
+        collector: bool,
+    ) -> (Vec<u8>, u32, u32) {
         let film = self.get_camera().get_film();
         let sample_bounds: Bounds2i = film.get_sample_bounds();
         self.preprocess(scene);
@@ -181,12 +198,15 @@ impl SamplerIntegrator {
         let n_tiles: Point2i = Point2i { x, y };
         // TODO: ProgressReporter reporter(nTiles.x * nTiles.y, "Rendering");
         let num_cores = if num_threads == 0_u8 {
-			1
+            1
         } else {
             num_threads as usize
         };
-        println!("SamplerIntegrator: Rendering with {:?} thread(s) ...", num_cores);
-		println!("Tile Dimension: {:?} of size {}", n_tiles, tile_size);
+        println!(
+            "SamplerIntegrator: Rendering with {:?} thread(s) ...",
+            num_cores
+        );
+        println!("Tile Dimension: {:?} of size {}", n_tiles, tile_size);
         {
             let block_queue = BlockQueue::new(
                 (
@@ -196,21 +216,19 @@ impl SamplerIntegrator {
                 (tile_size as u32, tile_size as u32),
                 (0, 0),
             );
-            let integrator = &self;
             let bq = &block_queue;
-            let sampler = &self.get_sampler();
-            let camera = &self.get_camera();
             let film = &film;
-            let pixel_bounds = &self.get_pixel_bounds();
-			while let Some((x, y)) = bq.next() {
-				let film_tile = self.render_tile(x,y, n_tiles, sample_bounds, tile_size, scene, film);
+            while let Some((x, y)) = bq.next() {
+                let film_tile =
+                    self.render_tile(x, y, n_tiles, sample_bounds, tile_size, scene, film);
 
-				// send the tile through the channel to main thread
-				film.merge_film_tile(&film_tile);
-			}
+                // send the tile through the channel to main thread
+                film.merge_film_tile(&film_tile);
+            }
         }
-//        film.write_image(1.0 as Float);
-		film.get_image(1.0 as Float)
+        #[cfg(test)]
+        film.write_image(1.0 as Float);
+        film.get_image(1.0 as Float)
     }
     pub fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut Sampler, depth: i32) -> Spectrum {
         match self {

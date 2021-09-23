@@ -1,9 +1,9 @@
 use fastly::http::{header, Method, StatusCode};
 use fastly::{mime, Error, Request, Response};
 
+#[cfg(feature = "ecp")]
 #[fastly::main]
 fn main(mut req: Request) -> Result<Response, Error> {
-
     // Filter request methods...
     match req.get_method() {
         // Allow GET and HEAD requests.
@@ -21,6 +21,7 @@ fn main(mut req: Request) -> Result<Response, Error> {
     match req.get_path() {
 
 		// "/rendertile" => {
+		// 	TODO call entry with specific params
 		// 	let b = req.into_body();
 		// 	let s = b.into_string();
 		// 	let input : HittableListWithTile = serde_json::from_str(&s).unwrap();

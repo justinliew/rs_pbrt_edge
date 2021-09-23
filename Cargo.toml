@@ -36,3 +36,7 @@ name = "rs_pbrt"
 
 [[bin]]
 name = "rs_pbrt_ecp"
+path = "src/bin/main.rs"
+
+[features]
+ecp = []

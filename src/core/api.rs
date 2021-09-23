@@ -114,6 +114,50 @@ impl Default for BsdfState {
     }
 }
 
+pub struct EcpState {
+    output: Vec<u8>,
+    width: u32,
+    height: u32,
+    collector: Option<bool>,
+}
+
+impl Default for EcpState {
+    fn default() -> Self {
+        EcpState {
+            output: vec![],
+            width: 0,
+            height: 0,
+            collector: None,
+        }
+    }
+}
+
+impl EcpState {
+    pub fn set_is_collector(&mut self, c: bool) {
+        assert!(self.collector.is_none()); // why are we setting this twice?
+        self.collector = Some(c);
+    }
+
+    pub fn is_collector(&self) -> bool {
+        if let Some(c) = self.collector {
+            c
+        } else {
+            false
+        }
+    }
+
+    pub fn set_output(&mut self, data: &Vec<u8>, width: u32, height: u32) {
+        self.width = width;
+        self.height = height;
+        self.output = data.clone();
+    }
+
+    // this will prepend the width and height into the returned vecvtor so that we can return this through wasm_bindgen
+    pub fn get_output_for_js(&self) -> Vec<u8> {
+        self.output.clone() // TODO
+    }
+}
+
 pub struct ApiState {
     pixelsamples: u32,
     number_of_threads: u8,
@@ -127,9 +171,7 @@ pub struct ApiState {
     pushed_transforms: Vec<TransformSet>,
     pushed_active_transform_bits: Vec<u8>,
     param_set: ParamSet,
-	pub output: Vec<u8>,
-	pub width: u32,
-	pub height: u32,
+    pub ecp_state: EcpState,
 }
 
 impl Default for ApiState {
@@ -166,9 +208,7 @@ impl Default for ApiState {
             pushed_transforms: Vec::new(),
             pushed_active_transform_bits: Vec::new(),
             param_set: ParamSet::default(),
-			output: vec![],
-			width: 0,
-			height: 0,
+            ecp_state: EcpState::default(),
         }
     }
 }
@@ -2338,6 +2378,7 @@ pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) -> (V
         api_state.pushed_transforms.is_empty(),
         "Missing end to pbrtTransformBegin()"
     );
+
     // MakeIntegrator
     let some_integrator: Option<Box<Integrator>> = api_state
         .render_options
@@ -2345,7 +2386,7 @@ pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) -> (V
     if let Some(mut integrator) = some_integrator {
         let scene = api_state.render_options.make_scene();
         let num_threads: u8 = api_state.number_of_threads;
-        return integrator.render(&scene, num_threads);
+        return integrator.render(&scene, num_threads, api_state.ecp_state.is_collector());
     } else {
         panic!("Unable to create integrator.");
     }

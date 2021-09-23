@@ -2,7 +2,8 @@ use pest_derive::*;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-#[macro_use] extern crate impl_ops;
+#[macro_use]
+extern crate impl_ops;
 
 #[derive(Parser)]
 #[grammar = "../examples/rs_pbrt.pest"]
@@ -24,6 +25,7 @@ pub mod textures;
 // parser
 use pest::Parser;
 
+#[cfg(not(feature = "ecp"))]
 use wasm_bindgen::prelude::*;
 
 // command line options
@@ -87,6 +89,7 @@ struct Cli {
 // Identity
 // TransformTimes
 
+#[allow(dead_code)]
 fn pbrt_bool_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, bool) {
     // single string with or without brackets
     let ident = pairs.next();
@@ -122,6 +125,7 @@ fn pbrt_bool_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, boo
     (string, b)
 }
 
+#[allow(dead_code)]
 fn pbrt_float_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, Vec<Float>) {
     let mut floats: Vec<Float> = Vec::new();
     // single float or several floats using brackets
@@ -156,6 +160,7 @@ fn pbrt_float_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, Ve
     (string, floats)
 }
 
+#[allow(dead_code)]
 fn pbrt_integer_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, Vec<i32>) {
     let mut integers: Vec<i32> = Vec::new();
     // single integer or several integers using brackets
@@ -190,6 +195,7 @@ fn pbrt_integer_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, 
     (string, integers)
 }
 
+#[allow(dead_code)]
 fn pbrt_string_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, String) {
     // single string with or without brackets
     let ident = pairs.next();
@@ -212,6 +218,7 @@ fn pbrt_string_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, S
     (string1, string2)
 }
 
+#[allow(dead_code)]
 fn pbrt_texture_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, String) {
     // single string with or without brackets
     let ident = pairs.next();
@@ -234,6 +241,7 @@ fn pbrt_texture_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, 
     (string1, string2)
 }
 
+#[allow(dead_code)]
 fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> ParamSet {
     let mut params: ParamSet = ParamSet::default();
     params.key_word = key_word;
@@ -457,6 +465,7 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
     params
 }
 
+#[allow(dead_code)]
 fn parse_line(
     api_state: &mut ApiState,
     bsdf_state: &mut BsdfState,
@@ -504,14 +513,12 @@ fn parse_line(
                 // WorldEnd
                 println!("{} {}", identifier, str_buf);
 
-				// output: Vec<u8>,
-				// width: u32,
-				// height: u32,
+                // output: Vec<u8>,
+                // width: u32,
+                // height: u32,
 
-				let (output,width,height) = pbrt_cleanup(api_state, integrator_arg);
-				api_state.output = output;
-				api_state.width = width;
-				api_state.height = height;
+                let (output, width, height) = pbrt_cleanup(api_state, integrator_arg);
+                api_state.ecp_state.set_output(&output, width, height);
             }
             _ => println!("{} {:?}", identifier, str_buf),
         }
@@ -794,6 +801,7 @@ fn parse_line(
     }
 }
 
+#[allow(dead_code)]
 fn parse_file(
     filename: String,
     api_state: &mut ApiState,
@@ -911,6 +919,13 @@ fn parse_file(
     // println!("Number of empty line(s):     {}", empty_count);
 }
 
+// TODO make a call out to do an async http call from html
+#[wasm_bindgen]
+extern "C" {
+    pub fn alert(s: &str);
+}
+
+#[allow(dead_code)]
 fn parse_data(
     data: &str,
     api_state: &mut ApiState,
@@ -918,7 +933,6 @@ fn parse_data(
     append: &str,
     integrator_arg: &Option<String>,
 ) {
-
     let pairs = PbrtParser::parse(Rule::pbrt, &data)
         .expect("unsuccessful parse")
         .next()
@@ -1010,16 +1024,21 @@ fn parse_data(
 
 #[cfg(test)]
 mod tests {
-	use super::*;
+    use super::*;
 
-	#[test]
-	fn lib_entry_test() {
-		lib_entry();
-	}
+    #[test]
+    fn lib_entry_test() {
+        lib_entry();
+    }
 }
 
+#[cfg(not(feature = "ecp"))]
 #[wasm_bindgen]
 pub fn lib_entry() -> Vec<u8> {
+    entry()
+}
+
+pub fn entry() -> Vec<u8> {
     // handle command line options
     // let args = Cli::from_args();
     // let pixelsamples: u32 = args.samples;
@@ -1031,22 +1050,12 @@ pub fn lib_entry() -> Vec<u8> {
     // let num_cores = num_cpus::get();
 
     let git_describe = option_env!("GIT_DESCRIBE").unwrap_or("unknown");
-    println!(
-        "pbrt version {} ({})",
-        VERSION, git_describe
-    );
+    println!("pbrt version {} ({})", VERSION, git_describe);
     println!("Copyright (c) 2016-2021 Jan Douglas Bert Walter.");
     println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
-	println!("WASM code by Justin Liew");
-    let (mut api_state, mut bsdf_state) = pbrt_init(
-        0,
-        1,
-        0.0,
-        1.0,
-        0.0,
-        1.0,
-    );
-	let data = r##"# Camera
+    println!("WASM code by Justin Liew");
+    let (mut api_state, mut bsdf_state) = pbrt_init(0, 1, 0.0, 1.0, 0.0, 1.0);
+    let data = r##"# Camera
 	Scale -1 1 1 # swap x-axis direction
 	LookAt -0.2779999521691323 -0.800000037997961 0.2730000129668042 # position
 		   -0.2779999521691323 -0.7990000379504636 0.2730000129668042 # target
@@ -1265,12 +1274,6 @@ pub fn lib_entry() -> Vec<u8> {
 	WorldEnd
 "##;
 
-    parse_data(
-		data,
-        &mut api_state,
-        &mut bsdf_state,
-        "",
-		&None,
-    );
-	api_state.output
+    parse_data(data, &mut api_state, &mut bsdf_state, "", &None);
+    api_state.ecp_state.get_output_for_js()
 }
