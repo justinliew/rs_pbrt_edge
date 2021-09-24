@@ -499,7 +499,6 @@ fn parse_line(
                 // height: u32,
 
                 let output = pbrt_cleanup(api_state, integrator_arg);
-                println!("WorldEnd output: {}", output.is_none());
                 if let Some(o) = output {
                     api_state.ecp_state.set_output(&o);
                 }
@@ -1012,10 +1011,10 @@ pub fn entry(collector: bool, tile_size: i32, x: Option<u32>, y: Option<u32>) ->
     // let num_cores = num_cpus::get();
 
     let git_describe = option_env!("GIT_DESCRIBE").unwrap_or("unknown");
-    println!("pbrt version {} ({})", VERSION, git_describe);
-    println!("Copyright (c) 2016-2021 Jan Douglas Bert Walter.");
-    println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
-    println!("WASM code by Justin Liew");
+    // println!("pbrt version {} ({})", VERSION, git_describe);
+    // println!("Copyright (c) 2016-2021 Jan Douglas Bert Walter.");
+    // println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
+    // println!("WASM code by Justin Liew");
     let (mut api_state, mut bsdf_state) = pbrt_init(0, 1, 0.0, 1.0, 0.0, 1.0);
     api_state.ecp_state.set_is_collector(collector);
     api_state.ecp_state.set_tile_size(tile_size);
@@ -1033,7 +1032,7 @@ pub fn entry(collector: bool, tile_size: i32, x: Option<u32>, y: Option<u32>) ->
 	Film "image"
 	  "integer xresolution" [ 500 ]
 	  "integer yresolution" [ 500 ]
-	Sampler "sobol" "integer pixelsamples" [1]
+	Sampler "sobol" "integer pixelsamples" [8]
 	Integrator "path"
 	WorldBegin
 	  # box_Material

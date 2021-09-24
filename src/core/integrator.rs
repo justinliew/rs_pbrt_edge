@@ -121,7 +121,6 @@ impl SamplerIntegrator {
         let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
         let tile_bounds: Bounds2i =
             Bounds2i::new(Point2i { x: x0, y: y0 }, Point2i { x: x1, y: y1 });
-        // println!("Starting image tile {:?}", tile_bounds);
         let mut film_tile = film.get_film_tile(&tile_bounds);
         for pixel in &tile_bounds {
             tile_sampler.start_pixel(pixel);
@@ -196,6 +195,10 @@ impl SamplerIntegrator {
                 done = !tile_sampler.start_next_sample();
             } // arena is dropped here !
         }
+        println!(
+            "Rendered Tile as worker x: {} y: {} size: {} bounds: {:?}",
+            x, y, tile_size, tile_bounds
+        );
         film_tile
     }
     /// All [SamplerIntegrators](enum.SamplerIntegrator.html) use the
@@ -219,7 +222,6 @@ impl SamplerIntegrator {
         let n_tiles: Point2i = Point2i { x, y };
         // TODO: ProgressReporter reporter(nTiles.x * nTiles.y, "Rendering");
         if collector {
-            println!("Tile Dimension: {:?} of size {}", n_tiles, tile_size);
             let block_queue = BlockQueue::new(
                 (
                     (n_tiles.x * tile_size) as u32,
@@ -246,17 +248,18 @@ impl SamplerIntegrator {
             }
         } else {
             let film = &film;
-            let film_tile = self.render_tile(
-                x_start.unwrap(),
-                y_start.unwrap(),
-                n_tiles,
-                sample_bounds,
-                tile_size,
-                scene,
-                film,
-            );
+            let x = x_start.unwrap();
+            let y = y_start.unwrap();
+            let film_tile = self.render_tile(x, y, n_tiles, sample_bounds, tile_size, scene, film);
             //            film.merge_film_tile(&film_tile);
-            return Some(film.get_tile_image(&film_tile, 1.0 as Float));
+            return Some(film.get_tile_image(
+                &film_tile,
+                tile_size,
+                x as i32,
+                y as i32,
+                sample_bounds,
+                1.0 as Float,
+            ));
         }
         #[cfg(test)]
         film.write_image(1.0 as Float);

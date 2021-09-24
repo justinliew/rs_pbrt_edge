@@ -646,17 +646,36 @@ impl Film {
         .unwrap();
     }
 
-    pub fn get_tile_image(&self, tile: &FilmTile, splat_scale: Float) -> Vec<u8> {
-        //        let pixels = vec![Pixel::default(); tile.pixel_bounds.area() as usize];
-        let mut rgb: Vec<Float> = vec![0.0 as Float; (3 * tile.pixel_bounds.area()) as usize];
+    pub fn get_tile_image(
+        &self,
+        tile: &FilmTile,
+        tile_size: i32,
+        x: i32,
+        y: i32,
+        sample_bounds: Bounds2i,
+        splat_scale: Float,
+    ) -> Vec<u8> {
+        let x0: i32 = sample_bounds.p_min.x + x * tile_size;
+        let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
+        let y0: i32 = sample_bounds.p_min.y + y * tile_size;
+        let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
+        let tile_bounds: Bounds2i =
+            Bounds2i::new(Point2i { x: x0, y: y0 }, Point2i { x: x1, y: y1 });
 
+        //        let pixels = vec![Pixel::default(); tile.pixel_bounds.area() as usize];
+        let mut rgb: Vec<Float> = vec![0.0 as Float; (3 * tile_bounds.area()) as usize];
+
+        println!(
+            "Tile Bounds {:?} vs tile.pixel_bounds {:?}",
+            tile_bounds, tile.pixel_bounds
+        );
         // TODO: ProfilePhase p(Prof::MergeFilmTile);
         // println!("Merging film tile {:?}", tile.pixel_bounds);
         // TODO: std::lock_guard<std::mutex> lock(mutex);
-        for pixel in &tile.pixel_bounds {
+        let mut pid = 0;
+        for pixel in &tile_bounds {
             // merge _pixel_ into _Film::pixels_
             let idx = tile.get_pixel_index(pixel.x, pixel.y);
-            //            println!("Pixel id {} {}x{}", idx, pixel.x, pixel.y);
             let tile_pixel = &tile.pixels[idx];
             let mut merge_pixel = Pixel::default();
             let mut xyz: [Float; 3] = [0.0; 3];
@@ -666,7 +685,8 @@ impl Film {
             }
             merge_pixel.filter_weight_sum += tile_pixel.filter_weight_sum;
 
-            let start: usize = 3 * idx as usize;
+            let start: usize = 3 * pid as usize;
+            pid = pid + 1;
             let mut rgb_array: [Float; 3] = [0.0 as Float; 3];
             xyz_to_rgb(&merge_pixel.xyz, &mut rgb_array); // TODO: Use 'rgb' directly.
             rgb[start] = rgb_array[0];
@@ -698,10 +718,10 @@ impl Film {
             rgb[start + 2] *= self.scale;
         }
 
-        let mut buffer: Vec<u8> = vec![0.0 as u8; (3 * tile.pixel_bounds.area()) as usize];
+        let mut buffer: Vec<u8> = vec![0.0 as u8; (3 * tile_bounds.area()) as usize];
         // 8-bit format; apply gamma (see WriteImage(...) in imageio.cpp)
-        let width: u32 = (tile.pixel_bounds.p_max.x - tile.pixel_bounds.p_min.x) as u32;
-        let height: u32 = (tile.pixel_bounds.p_max.y - tile.pixel_bounds.p_min.y) as u32;
+        let width: u32 = (tile_bounds.p_max.x - tile_bounds.p_min.x) as u32;
+        let height: u32 = (tile_bounds.p_max.y - tile_bounds.p_min.y) as u32;
         for y in 0..height {
             for x in 0..width {
                 // red
@@ -725,14 +745,37 @@ impl Film {
                     0.0 as Float,
                     255.0 as Float,
                 ) as u8;
-                // println!(
-                //     "Buffer {} {} {}",
-                //     buffer[index - 2],
-                //     buffer[index - 1],
-                //     buffer[index],
-                // )
+
+                // let r = match y % 3 {
+                //     0 => 100,
+                //     _ => 0,
+                // };
+                // let g = match y % 3 {
+                //     1 => 150,
+                //     _ => 0,
+                // };
+                // let b = match y % 3 {
+                //     2 => 200,
+                //     _ => 0,
+                // };
+                // let index: usize = (3 * (y * width + x)) as usize;
+                // buffer[index] = r;
+                // let index: usize = (3 * (y * width + x) + 1) as usize;
+                // buffer[index] = g;
+                // let index: usize = (3 * (y * width + x) + 2) as usize;
+                // buffer[index] = b;
             }
         }
+        #[cfg(test)]
+        image::save_buffer(
+            &Path::new("pbrt.png"),
+            &buffer,
+            width,
+            height,
+            image::ColorType::Rgb8,
+        )
+        .unwrap();
+
         buffer
     }
     // pub fn get_pixel<'a>(&self, p: &Point2i) -> &'a Pixel {

@@ -51,13 +51,11 @@ fn main(mut req: Request) -> Result<Response, Error> {
     };
 
     // Pattern match on the path.
-    println!("Looking at path {}", req.get_path());
     match req.get_path() {
 
 		"/rendertile" => {
 			let b = req.into_body();
 			let s = b.into_string();
-			println!("BODY STRING IS {}", s);
 			let input : RenderTileInfo = serde_json::from_str(&s).unwrap();
 			let output = entry::entry(false, input.tile_size, Some(input.x), Some(input.y));
 			Ok(Response::from_status(StatusCode::OK)

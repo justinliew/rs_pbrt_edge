@@ -153,7 +153,6 @@ impl EcpState {
     }
 
     pub fn set_output(&mut self, data: &Vec<u8>) {
-        println!("set_output");
         self.output = data.clone();
     }
 
