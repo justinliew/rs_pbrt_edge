@@ -646,26 +646,34 @@ impl Film {
         .unwrap();
     }
 
-    pub fn get_image(&self, splat_scale: Float) -> (Vec<u8>, u32, u32) {
-        let mut rgb: Vec<Float> =
-            vec![0.0 as Float; (3 * self.cropped_pixel_bounds.area()) as usize];
-        let mut offset;
-        for p in &self.cropped_pixel_bounds {
-            // convert pixel XYZ color to RGB
-            assert!(pnt2_inside_exclusivei(p, &self.cropped_pixel_bounds));
-            let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
-            offset = ((p.x - self.cropped_pixel_bounds.p_min.x)
-                + (p.y - self.cropped_pixel_bounds.p_min.y) * width) as usize;
-            let pixel: &Pixel = &self.pixels.read().unwrap()[offset];
+    pub fn get_tile_image(&self, tile: &FilmTile, splat_scale: Float) -> Vec<u8> {
+        //        let pixels = vec![Pixel::default(); tile.pixel_bounds.area() as usize];
+        let mut rgb: Vec<Float> = vec![0.0 as Float; (3 * tile.pixel_bounds.area()) as usize];
 
-            let start: usize = 3 * offset;
+        // TODO: ProfilePhase p(Prof::MergeFilmTile);
+        // println!("Merging film tile {:?}", tile.pixel_bounds);
+        // TODO: std::lock_guard<std::mutex> lock(mutex);
+        for pixel in &tile.pixel_bounds {
+            // merge _pixel_ into _Film::pixels_
+            let idx = tile.get_pixel_index(pixel.x, pixel.y);
+            //            println!("Pixel id {} {}x{}", idx, pixel.x, pixel.y);
+            let tile_pixel = &tile.pixels[idx];
+            let mut merge_pixel = Pixel::default();
+            let mut xyz: [Float; 3] = [0.0; 3];
+            tile_pixel.contrib_sum.to_xyz(&mut xyz);
+            for (i, item) in xyz.iter().enumerate() {
+                merge_pixel.xyz[i] += item;
+            }
+            merge_pixel.filter_weight_sum += tile_pixel.filter_weight_sum;
+
+            let start: usize = 3 * idx as usize;
             let mut rgb_array: [Float; 3] = [0.0 as Float; 3];
-            xyz_to_rgb(&pixel.xyz, &mut rgb_array); // TODO: Use 'rgb' directly.
+            xyz_to_rgb(&merge_pixel.xyz, &mut rgb_array); // TODO: Use 'rgb' directly.
             rgb[start] = rgb_array[0];
             rgb[start + 1] = rgb_array[1];
             rgb[start + 2] = rgb_array[2];
             // normalize pixel with weight sum
-            let filter_weight_sum: Float = pixel.filter_weight_sum;
+            let filter_weight_sum: Float = merge_pixel.filter_weight_sum;
             if filter_weight_sum != 0.0 as Float {
                 let inv_wt: Float = 1.0 as Float / filter_weight_sum;
                 rgb[start] = (rgb[start] * inv_wt).max(0.0 as Float);
@@ -674,7 +682,7 @@ impl Film {
             }
             // add splat value at pixel
             let mut splat_rgb: [Float; 3] = [0.0 as Float; 3];
-            let pixel_splat_xyz: &[Float; 3] = &pixel.splat_xyz;
+            let pixel_splat_xyz: &[Float; 3] = &merge_pixel.splat_xyz;
             let splat_xyz: [Float; 3] = [
                 *pixel_splat_xyz.index(0),
                 *pixel_splat_xyz.index(1),
@@ -689,13 +697,11 @@ impl Film {
             rgb[start + 1] *= self.scale;
             rgb[start + 2] *= self.scale;
         }
-        // TODO: pbrt::WriteImage(filename, &rgb[0], croppedPixelBounds, fullResolution);
-        let mut buffer: Vec<u8> = vec![0.0 as u8; (3 * self.cropped_pixel_bounds.area()) as usize];
+
+        let mut buffer: Vec<u8> = vec![0.0 as u8; (3 * tile.pixel_bounds.area()) as usize];
         // 8-bit format; apply gamma (see WriteImage(...) in imageio.cpp)
-        let width: u32 =
-            (self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x) as u32;
-        let height: u32 =
-            (self.cropped_pixel_bounds.p_max.y - self.cropped_pixel_bounds.p_min.y) as u32;
+        let width: u32 = (tile.pixel_bounds.p_max.x - tile.pixel_bounds.p_min.x) as u32;
+        let height: u32 = (tile.pixel_bounds.p_max.y - tile.pixel_bounds.p_min.y) as u32;
         for y in 0..height {
             for x in 0..width {
                 // red
@@ -719,9 +725,15 @@ impl Film {
                     0.0 as Float,
                     255.0 as Float,
                 ) as u8;
+                // println!(
+                //     "Buffer {} {} {}",
+                //     buffer[index - 2],
+                //     buffer[index - 1],
+                //     buffer[index],
+                // )
             }
         }
-		(buffer, width, height)
+        buffer
     }
     // pub fn get_pixel<'a>(&self, p: &Point2i) -> &'a Pixel {
     //     assert!(pnt2_inside_exclusivei(p, &self.cropped_pixel_bounds));

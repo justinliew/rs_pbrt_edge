@@ -27,6 +27,20 @@ use crate::integrators::sppm::SPPMIntegrator;
 use crate::integrators::volpath::VolPathIntegrator;
 use crate::integrators::whitted::WhittedIntegrator;
 
+#[cfg(not(feature = "ecp"))]
+#[cfg(not(test))]
+use wasm_bindgen::prelude::*;
+
+use std::os::raw::{c_int, c_uint};
+
+// JLTODO make a call out to do an async http call from html
+#[cfg(not(feature = "ecp"))]
+#[cfg(not(test))]
+#[wasm_bindgen(raw_module = "./request.js")]
+extern "C" {
+    pub fn http_request(x: c_uint, u: c_uint, size: c_int);
+}
+
 // see integrator.h
 
 pub enum Integrator {
@@ -42,14 +56,19 @@ impl Integrator {
         scene: &Scene,
         num_threads: u8,
         collector: bool,
-    ) -> (Vec<u8>, u32, u32) {
+        tile_size: i32,
+        x: Option<u32>,
+        y: Option<u32>,
+    ) -> Option<Vec<u8>> {
         match self {
-            // TODO return type for `get_image`
+            // JLTODO
             // Integrator::BDPT(integrator) => integrator.render(scene, num_threads),
             // Integrator::MLT(integrator) => integrator.render(scene, num_threads),
             // Integrator::SPPM(integrator) => integrator.render(scene, num_threads),
-            Integrator::Sampler(integrator) => integrator.render(scene, num_threads, collector),
-            _ => (vec![], 0, 0),
+            Integrator::Sampler(integrator) => {
+                integrator.render(scene, num_threads, tile_size, collector, x, y)
+            }
+            _ => None,
         }
     }
 }
@@ -186,28 +205,21 @@ impl SamplerIntegrator {
         &mut self,
         scene: &Scene,
         num_threads: u8,
+        tile_size: i32,
         collector: bool,
-    ) -> (Vec<u8>, u32, u32) {
+        x_start: Option<u32>,
+        y_start: Option<u32>,
+    ) -> Option<Vec<u8>> {
         let film = self.get_camera().get_film();
         let sample_bounds: Bounds2i = film.get_sample_bounds();
         self.preprocess(scene);
         let sample_extent: Vector2i = sample_bounds.diagonal();
-        let tile_size: i32 = 16;
         let x: i32 = (sample_extent.x + tile_size - 1) / tile_size;
         let y: i32 = (sample_extent.y + tile_size - 1) / tile_size;
         let n_tiles: Point2i = Point2i { x, y };
         // TODO: ProgressReporter reporter(nTiles.x * nTiles.y, "Rendering");
-        let num_cores = if num_threads == 0_u8 {
-            1
-        } else {
-            num_threads as usize
-        };
-        println!(
-            "SamplerIntegrator: Rendering with {:?} thread(s) ...",
-            num_cores
-        );
-        println!("Tile Dimension: {:?} of size {}", n_tiles, tile_size);
-        {
+        if collector {
+            println!("Tile Dimension: {:?} of size {}", n_tiles, tile_size);
             let block_queue = BlockQueue::new(
                 (
                     (n_tiles.x * tile_size) as u32,
@@ -219,17 +231,41 @@ impl SamplerIntegrator {
             let bq = &block_queue;
             let film = &film;
             while let Some((x, y)) = bq.next() {
-                let film_tile =
-                    self.render_tile(x, y, n_tiles, sample_bounds, tile_size, scene, film);
+                #[cfg(not(feature = "ecp"))]
+                #[cfg(not(test))]
+                unsafe {
+                    http_request(x, y, tile_size);
+                }
 
-                // send the tile through the channel to main thread
-                film.merge_film_tile(&film_tile);
+                #[cfg(test)]
+                {
+                    let film_tile =
+                        self.render_tile(x, y, n_tiles, sample_bounds, tile_size, scene, film);
+                    film.merge_film_tile(&film_tile);
+                }
             }
+        } else {
+            let film = &film;
+            let film_tile = self.render_tile(
+                x_start.unwrap(),
+                y_start.unwrap(),
+                n_tiles,
+                sample_bounds,
+                tile_size,
+                scene,
+                film,
+            );
+            //            film.merge_film_tile(&film_tile);
+            return Some(film.get_tile_image(&film_tile, 1.0 as Float));
         }
         #[cfg(test)]
         film.write_image(1.0 as Float);
-        film.get_image(1.0 as Float)
+
+        // this is the return
+        //        film.get_image(1.0 as Float)
+        None
     }
+
     pub fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut Sampler, depth: i32) -> Spectrum {
         match self {
             SamplerIntegrator::AO(integrator) => integrator.li(ray, scene, sampler, depth),

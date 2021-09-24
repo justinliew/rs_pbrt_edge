@@ -7,37 +7,49 @@
 </head>
 
 <body>
-	<canvas id="framebuffer" width="500" height="500">your canvas loads here</canvas>
+	<canvas id="framebuffer" width="500" height="500"></canvas>
+	<div id="controls">
+		Tile Size: <input id="tile_size" value="64" />
+		<button id="render_button">Render</button>
+	</div>
 	<script type="module">
+
+		function start_render() {
+
+		}
+
 		import init, { lib_entry } from "./pkg/rs_pbrt.js";
 		init()
 			.then(() => {
-				let output = lib_entry()
+				document.getElementById("render_button").addEventListener("click", () => {
+					let tile_size = +document.getElementById("tile_size").value;
+					let output = lib_entry(tile_size)
 
-				var canvas = document.getElementById("framebuffer");
-				canvas.width = 500; // TODO get the width and height from lib_entry in the future
-				canvas.height = 500;
-				var ctx = canvas.getContext('2d');
+					var canvas = document.getElementById("framebuffer");
+					canvas.width = 500; // TODO get the width and height from lib_entry in the future
+					canvas.height = 500;
+					var ctx = canvas.getContext('2d');
 
-				var data = new Uint8ClampedArray(4 * 500 * 500);
-				for (var i = 0; i < 500; ++i) {
-					for (var j = 0; j < 500; ++j) {
-						var base = i * 500 + j;
-						data[4 * base] = output[3 * base];
-						data[4 * base + 1] = output[3 * base + 1];
-						data[4 * base + 2] = output[3 * base + 2];
-						data[4 * base + 3] = 255;
+					var data = new Uint8ClampedArray(4 * 500 * 500);
+					for (var i = 0; i < 500; ++i) {
+						for (var j = 0; j < 500; ++j) {
+							var base = i * 500 + j;
+							data[4 * base] = output[3 * base];
+							data[4 * base + 1] = output[3 * base + 1];
+							data[4 * base + 2] = output[3 * base + 2];
+							data[4 * base + 3] = 255;
+						}
 					}
-				}
-				var imageData = new ImageData(data, 500, 500);
-				var tempcanvas = document.createElement('canvas');
-				tempcanvas.width = 500;
-				tempcanvas.height = 500;
-				var tempctx = tempcanvas.getContext('2d');
-				tempctx.putImageData(imageData, 0, 0);
+					var imageData = new ImageData(data, 500, 500);
+					var tempcanvas = document.createElement('canvas');
+					tempcanvas.width = 500;
+					tempcanvas.height = 500;
+					var tempctx = tempcanvas.getContext('2d');
+					tempctx.putImageData(imageData, 0, 0);
 
-				//			ctx.scale(10,10);
-				ctx.drawImage(tempcanvas, 0, 0);
+					//			ctx.scale(10,10);
+					ctx.drawImage(tempcanvas, 0, 0);
+				});
 			});
 	</script>
 </body>

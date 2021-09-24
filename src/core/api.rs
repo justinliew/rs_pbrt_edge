@@ -116,18 +116,20 @@ impl Default for BsdfState {
 
 pub struct EcpState {
     output: Vec<u8>,
-    width: u32,
-    height: u32,
     collector: Option<bool>,
+    tile_size: i32,
+    pub x: Option<u32>,
+    pub y: Option<u32>,
 }
 
 impl Default for EcpState {
     fn default() -> Self {
         EcpState {
             output: vec![],
-            width: 0,
-            height: 0,
+            tile_size: 16,
             collector: None,
+            x: None,
+            y: None,
         }
     }
 }
@@ -146,12 +148,18 @@ impl EcpState {
         }
     }
 
-    pub fn set_output(&mut self, data: &Vec<u8>, width: u32, height: u32) {
-        self.width = width;
-        self.height = height;
+    pub fn set_tile_size(&mut self, s: i32) {
+        self.tile_size = s;
+    }
+
+    pub fn set_output(&mut self, data: &Vec<u8>) {
+        println!("set_output");
         self.output = data.clone();
     }
 
+    // JLTODO
+    // do we need this?
+    // or should we return just width/height?
     // this will prepend the width and height into the returned vecvtor so that we can return this through wasm_bindgen
     pub fn get_output_for_js(&self) -> Vec<u8> {
         self.output.clone() // TODO
@@ -2368,7 +2376,7 @@ pub fn pbrt_init(
     (api_state, bsdf_state)
 }
 
-pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) -> (Vec<u8>, u32, u32) {
+pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) -> Option<Vec<u8>> {
     // println!("WorldEnd");
     assert!(
         api_state.pushed_graphics_states.is_empty(),
@@ -2386,7 +2394,14 @@ pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) -> (V
     if let Some(mut integrator) = some_integrator {
         let scene = api_state.render_options.make_scene();
         let num_threads: u8 = api_state.number_of_threads;
-        return integrator.render(&scene, num_threads, api_state.ecp_state.is_collector());
+        integrator.render(
+            &scene,
+            num_threads,
+            api_state.ecp_state.is_collector(),
+            api_state.ecp_state.tile_size,
+            api_state.ecp_state.x,
+            api_state.ecp_state.y,
+        )
     } else {
         panic!("Unable to create integrator.");
     }
