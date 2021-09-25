@@ -2,17 +2,20 @@
 /* eslint-disable */
 /**
 * @param {number} tile_size
+* @param {string} data
 * @returns {Uint8Array}
 */
-export function lib_entry(tile_size: number): Uint8Array;
+export function lib_entry(tile_size: number, data: string): Uint8Array;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly lib_entry: (a: number, b: number) => void;
-  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
+  readonly lib_entry: (a: number, b: number, c: number, d: number) => void;
   readonly __wbindgen_free: (a: number, b: number) => void;
+  readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
+  readonly __wbindgen_malloc: (a: number) => number;
+  readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
 }
 
 /**

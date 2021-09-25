@@ -6,6 +6,9 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 #[grammar = "../examples/rs_pbrt.pest"]
 struct PbrtParser;
 
+#[cfg(not(feature = "ecp"))]
+use wasm_bindgen::prelude::*;
+
 // parser
 use pest::Parser;
 
@@ -35,6 +38,15 @@ use std::io::BufReader;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+
+#[cfg(not(feature = "ecp"))]
+#[wasm_bindgen]
+extern "C" {
+    // Use `js_namespace` here to bind `console.log(..)` instead of just
+    // `log(..)`
+    #[wasm_bindgen(js_namespace = console)]
+    pub fn log(s: &str);
+}
 
 /// Parse a PBRT scene file (extension .pbrt) and render it.
 #[derive(StructOpt)]
@@ -454,6 +466,9 @@ fn parse_line(
     str_buf: String,
     integrator_arg: &Option<String>,
 ) {
+    let msg = format!("parse_line identifier: {}, buf: {}", identifier, str_buf);
+    #[cfg(not(feature = "ecp"))]
+    log(&msg);
     if str_buf == "" {
         // no additional arguments
         match identifier {
@@ -492,11 +507,6 @@ fn parse_line(
             }
             "WorldEnd" => {
                 // WorldEnd
-                println!("{} {}", identifier, str_buf);
-
-                // output: Vec<u8>,
-                // width: u32,
-                // height: u32,
 
                 let output = pbrt_cleanup(api_state, integrator_arg);
                 if let Some(o) = output {
@@ -1029,6 +1039,10 @@ pub fn entry(
         api_state.ecp_state.x = x;
         api_state.ecp_state.y = y;
     }
+
+    let msg = format!("data: {}", data);
+    #[cfg(not(feature = "ecp"))]
+    log(&msg);
 
     parse_data(data, &mut api_state, &mut bsdf_state, "", &None);
     api_state.ecp_state.get_output_for_js()

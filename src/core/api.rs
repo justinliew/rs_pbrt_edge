@@ -100,6 +100,9 @@ use crate::textures::scale::ScaleTexture;
 use crate::textures::windy::WindyTexture;
 use crate::textures::wrinkled::WrinkledTexture;
 
+#[cfg(not(feature = "ecp"))]
+use crate::entry::log;
+
 // see api.cpp
 
 pub struct BsdfState {
@@ -2383,6 +2386,8 @@ pub fn pbrt_init(
 
 pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) -> Option<Vec<u8>> {
     // println!("WorldEnd");
+    #[cfg(not(feature = "ecp"))]
+    log("pbrt_cleanup");
     assert!(
         api_state.pushed_graphics_states.is_empty(),
         "Missing end to pbrtAttributeBegin()"
@@ -2399,6 +2404,8 @@ pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) -> Op
     if let Some(mut integrator) = some_integrator {
         let scene = api_state.render_options.make_scene();
         let num_threads: u8 = api_state.number_of_threads;
+        #[cfg(not(feature = "ecp"))]
+        log("about to render");
         integrator.render(
             &scene,
             num_threads,

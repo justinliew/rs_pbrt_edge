@@ -665,10 +665,10 @@ impl Film {
         //        let pixels = vec![Pixel::default(); tile.pixel_bounds.area() as usize];
         let mut rgb: Vec<Float> = vec![0.0 as Float; (3 * tile_bounds.area()) as usize];
 
-        println!(
-            "Tile Bounds {:?} vs tile.pixel_bounds {:?}",
-            tile_bounds, tile.pixel_bounds
-        );
+        // println!(
+        //     "Tile Bounds {:?} vs tile.pixel_bounds {:?}",
+        //     tile_bounds, tile.pixel_bounds
+        // );
         // TODO: ProfilePhase p(Prof::MergeFilmTile);
         // println!("Merging film tile {:?}", tile.pixel_bounds);
         // TODO: std::lock_guard<std::mutex> lock(mutex);

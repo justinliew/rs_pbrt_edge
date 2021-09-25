@@ -28,12 +28,16 @@ use crate::integrators::volpath::VolPathIntegrator;
 use crate::integrators::whitted::WhittedIntegrator;
 
 #[cfg(not(feature = "ecp"))]
+use crate::entry::log;
+
+#[cfg(not(feature = "ecp"))]
 #[cfg(not(test))]
 use wasm_bindgen::prelude::*;
 
+#[cfg(not(feature = "ecp"))]
+#[cfg(not(test))]
 use std::os::raw::{c_char, c_int, c_uint};
 
-// JLTODO make a call out to do an async http call from html
 #[cfg(not(feature = "ecp"))]
 #[cfg(not(test))]
 #[wasm_bindgen(raw_module = "./request.js")]
@@ -63,7 +67,9 @@ impl Integrator {
     ) -> Option<Vec<u8>> {
         match self {
             // JLTODO
-            // Integrator::BDPT(integrator) => integrator.render(scene, num_threads),
+            Integrator::BDPT(integrator) => {
+                integrator.render(scene, num_threads, tile_size, collector, x, y, data)
+            }
             // Integrator::MLT(integrator) => integrator.render(scene, num_threads),
             // Integrator::SPPM(integrator) => integrator.render(scene, num_threads),
             Integrator::Sampler(integrator) => {
@@ -196,10 +202,10 @@ impl SamplerIntegrator {
                 done = !tile_sampler.start_next_sample();
             } // arena is dropped here !
         }
-        println!(
-            "Rendered Tile as worker x: {} y: {} size: {} bounds: {:?}",
-            x, y, tile_size, tile_bounds
-        );
+        // println!(
+        //     "Rendered Tile as worker x: {} y: {} size: {} bounds: {:?}",
+        //     x, y, tile_size, tile_bounds
+        // );
         film_tile
     }
     /// All [SamplerIntegrators](enum.SamplerIntegrator.html) use the
