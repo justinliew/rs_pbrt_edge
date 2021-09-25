@@ -120,6 +120,7 @@ pub struct EcpState {
     tile_size: i32,
     pub x: Option<u32>,
     pub y: Option<u32>,
+    pub data: String,
 }
 
 impl Default for EcpState {
@@ -130,6 +131,7 @@ impl Default for EcpState {
             collector: None,
             x: None,
             y: None,
+            data: "".to_string(),
         }
     }
 }
@@ -150,6 +152,10 @@ impl EcpState {
 
     pub fn set_tile_size(&mut self, s: i32) {
         self.tile_size = s;
+    }
+
+    pub fn set_data(&mut self, data: &str) {
+        self.data = data.to_string();
     }
 
     pub fn set_output(&mut self, data: &Vec<u8>) {
@@ -2400,6 +2406,7 @@ pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) -> Op
             api_state.ecp_state.tile_size,
             api_state.ecp_state.x,
             api_state.ecp_state.y,
+            &api_state.ecp_state.data,
         )
     } else {
         panic!("Unable to create integrator.");

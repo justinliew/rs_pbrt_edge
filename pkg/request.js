@@ -1,4 +1,4 @@
-export function http_request(x, y, tile_size) {
+export function http_request(x, y, tile_size, data) {
 	var xhttp = new XMLHttpRequest();
 	xhttp.onload = function(oEvent) {
 		var arraybuffer = xhttp.response;
@@ -39,6 +39,7 @@ export function http_request(x, y, tile_size) {
 	body["x"] = x;
 	body["y"] = y;
 	body["tile_size"] = tile_size;
+	body["data"] = data;
 	var body_str = JSON.stringify(body);
 
     xhttp.send(body_str);

@@ -39,6 +39,14 @@ export function lib_entry(tile_size) {
     }
 }
 
+let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
+
+cachedTextDecoder.decode();
+
+function getStringFromWasm0(ptr, len) {
+    return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
+}
+
 async function load(module, imports) {
     if (typeof Response === 'function' && module instanceof Response) {
         if (typeof WebAssembly.instantiateStreaming === 'function') {
@@ -76,8 +84,12 @@ async function init(input) {
     }
     const imports = {};
     imports.wbg = {};
-    imports.wbg.__wbg_httprequest_38e26ba6a476840f = function(arg0, arg1, arg2) {
-        http_request(arg0 >>> 0, arg1 >>> 0, arg2);
+    imports.wbg.__wbg_httprequest_38e26ba6a476840f = function(arg0, arg1, arg2, arg3, arg4) {
+        try {
+            http_request(arg0 >>> 0, arg1 >>> 0, arg2, getStringFromWasm0(arg3, arg4));
+        } finally {
+            wasm.__wbindgen_free(arg3, arg4);
+        }
     };
 
     if (typeof input === 'string' || (typeof Request === 'function' && input instanceof Request) || (typeof URL === 'function' && input instanceof URL)) {

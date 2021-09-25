@@ -31,14 +31,14 @@ use crate::integrators::whitted::WhittedIntegrator;
 #[cfg(not(test))]
 use wasm_bindgen::prelude::*;
 
-use std::os::raw::{c_int, c_uint};
+use std::os::raw::{c_char, c_int, c_uint};
 
 // JLTODO make a call out to do an async http call from html
 #[cfg(not(feature = "ecp"))]
 #[cfg(not(test))]
 #[wasm_bindgen(raw_module = "./request.js")]
 extern "C" {
-    pub fn http_request(x: c_uint, u: c_uint, size: c_int);
+    pub fn http_request(x: c_uint, u: c_uint, size: c_int, data: String);
 }
 
 // see integrator.h
@@ -59,6 +59,7 @@ impl Integrator {
         tile_size: i32,
         x: Option<u32>,
         y: Option<u32>,
+        data: &str,
     ) -> Option<Vec<u8>> {
         match self {
             // JLTODO
@@ -66,7 +67,7 @@ impl Integrator {
             // Integrator::MLT(integrator) => integrator.render(scene, num_threads),
             // Integrator::SPPM(integrator) => integrator.render(scene, num_threads),
             Integrator::Sampler(integrator) => {
-                integrator.render(scene, num_threads, tile_size, collector, x, y)
+                integrator.render(scene, num_threads, tile_size, collector, x, y, data)
             }
             _ => None,
         }
@@ -212,6 +213,7 @@ impl SamplerIntegrator {
         collector: bool,
         x_start: Option<u32>,
         y_start: Option<u32>,
+        data: &str,
     ) -> Option<Vec<u8>> {
         let film = self.get_camera().get_film();
         let sample_bounds: Bounds2i = film.get_sample_bounds();
@@ -236,7 +238,7 @@ impl SamplerIntegrator {
                 #[cfg(not(feature = "ecp"))]
                 #[cfg(not(test))]
                 unsafe {
-                    http_request(x, y, tile_size);
+                    http_request(x, y, tile_size, data.to_string());
                 }
 
                 #[cfg(test)]

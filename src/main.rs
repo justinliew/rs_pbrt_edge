@@ -27,6 +27,7 @@ pub struct RenderTileInfo {
     pub x: u32,
     pub y: u32,
     pub tile_size: i32,
+    pub data: String,
     // pub dimi: usize,
     // pub dimj: usize,
     // pub height: usize,
@@ -57,7 +58,7 @@ fn main(mut req: Request) -> Result<Response, Error> {
 			let b = req.into_body();
 			let s = b.into_string();
 			let input : RenderTileInfo = serde_json::from_str(&s).unwrap();
-			let output = entry::entry(false, input.tile_size, Some(input.x), Some(input.y));
+			let output = entry::entry(false, input.tile_size, Some(input.x), Some(input.y), &input.data);
 			Ok(Response::from_status(StatusCode::OK)
 				.with_header("Access-Control-Allow-Origin", HeaderValue::from_static("*"))
 				.with_header("Vary", HeaderValue::from_static("Origin"))
