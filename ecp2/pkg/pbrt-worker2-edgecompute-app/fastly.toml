@@ -1,0 +1,9 @@
+# This file describes a Fastly Compute@Edge package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = ["jliew+hack@fastly.com"]
+description = "Worker 2 sharding"
+language = "other"
+manifest_version = 1
+name = "pbrt-worker2.edgecompute.app"
+service_id = ""

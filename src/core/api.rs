@@ -7,6 +7,10 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use std::path::PathBuf;
 use std::sync::Arc;
+
+#[cfg(ecp)]
+use std::time::Instant;
+
 // pbrt
 use crate::accelerators::bvh::{BVHAccel, SplitMethod};
 use crate::accelerators::kdtreeaccel::KdTreeAccel;
@@ -312,7 +316,7 @@ impl RenderOptions {
                 } else {
                     integrator_name = self.integrator_name.clone();
                 }
-                println!("Integrator {:?}", integrator_name);
+                //                println!("Integrator {:?}", integrator_name);
                 if integrator_name == "whitted" {
                     // CreateWhittedIntegrator
                     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
@@ -542,13 +546,18 @@ impl RenderOptions {
         some_integrator
     }
     pub fn make_scene(&self) -> Scene {
+        #[cfg(ecp)]
+        let acc = Instant::now();
         let some_accelerator = make_accelerator(
             &self.accelerator_name,
             &self.primitives,
             &self.accelerator_params,
         );
+        #[cfg(ecp)]
+        println!("acc: {}", acc.elapsed().as_millis());
         if let Some(accelerator) = some_accelerator {
-            Scene::new(accelerator, self.lights.clone())
+            let s = Scene::new(accelerator, self.lights.clone());
+            return s;
         } else {
             panic!("Unable to create accelerator.");
         }
@@ -2385,6 +2394,8 @@ pub fn pbrt_init(
 }
 
 pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) -> Option<Vec<u8>> {
+    #[cfg(ecp)]
+    let now = Instant::now();
     // println!("WorldEnd");
     #[cfg(not(feature = "ecp"))]
     log("pbrt_cleanup");
@@ -2406,7 +2417,7 @@ pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) -> Op
         let num_threads: u8 = api_state.number_of_threads;
         #[cfg(not(feature = "ecp"))]
         log("about to render");
-        integrator.render(
+        let ret = integrator.render(
             &scene,
             num_threads,
             api_state.ecp_state.is_collector(),
@@ -2414,7 +2425,10 @@ pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) -> Op
             api_state.ecp_state.x,
             api_state.ecp_state.y,
             &api_state.ecp_state.data,
-        )
+        );
+        #[cfg(ecp)]
+        println!("pbrt_cleanup: {}", now.elapsed().as_millis());
+        ret
     } else {
         panic!("Unable to create integrator.");
     }
@@ -2589,8 +2603,8 @@ pub fn pbrt_pixel_filter(api_state: &mut ApiState, params: ParamSet) {
 }
 
 pub fn pbrt_film(api_state: &mut ApiState, params: ParamSet) {
-    println!("Film \"{}\"", params.name);
-    print_params(&params);
+    // println!("Film \"{}\"", params.name);
+    // print_params(&params);
     api_state.render_options.film_name = params.name.clone();
     api_state.param_set = params;
     api_state
@@ -2600,8 +2614,8 @@ pub fn pbrt_film(api_state: &mut ApiState, params: ParamSet) {
 }
 
 pub fn pbrt_sampler(api_state: &mut ApiState, params: ParamSet) {
-    println!("Sampler \"{}\"", params.name);
-    print_params(&params);
+    //    println!("Sampler \"{}\"", params.name);
+    //    print_params(&params);
     api_state.render_options.sampler_name = params.name.clone();
     api_state.param_set = params;
     api_state
@@ -2622,8 +2636,8 @@ pub fn pbrt_accelerator(api_state: &mut ApiState, params: ParamSet) {
 }
 
 pub fn pbrt_integrator(api_state: &mut ApiState, params: ParamSet) {
-    println!("Integrator \"{}\"", params.name);
-    print_params(&params);
+    // println!("Integrator \"{}\"", params.name);
+    // print_params(&params);
     api_state.render_options.integrator_name = params.name.clone();
     api_state.param_set = params;
     api_state

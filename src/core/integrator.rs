@@ -3,6 +3,9 @@
 
 // std
 use std::sync::Arc;
+#[cfg(ecp)]
+use std::time::Instant;
+
 // pbrt
 use crate::blockqueue::BlockQueue;
 use crate::core::camera::{Camera, CameraSample};
@@ -255,19 +258,24 @@ impl SamplerIntegrator {
                 }
             }
         } else {
+            #[cfg(ecp)]
+            let mut now = Instant::now();
             let film = &film;
             let x = x_start.unwrap();
             let y = y_start.unwrap();
             let film_tile = self.render_tile(x, y, n_tiles, sample_bounds, tile_size, scene, film);
             //            film.merge_film_tile(&film_tile);
-            return Some(film.get_tile_image(
+            #[cfg(ecp)]
+            println!("render_tile: {}", now.elapsed().as_millis());
+            let tile_image = film.get_tile_image(
                 &film_tile,
                 tile_size,
                 x as i32,
                 y as i32,
                 sample_bounds,
                 1.0 as Float,
-            ));
+            );
+            return Some(tile_image);
         }
         #[cfg(test)]
         film.write_image(1.0 as Float);

@@ -1,0 +1,9 @@
+# This file describes a Fastly Compute@Edge package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = ["jliew+hack@fastly.com"]
+description = "Worker Shard 3"
+language = "other"
+manifest_version = 1
+name = "ecp3"
+service_id = "3OAnnSEZoxehAHO0NIEp8k"

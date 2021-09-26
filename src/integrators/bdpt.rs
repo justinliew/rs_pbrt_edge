@@ -2,6 +2,9 @@
 use std::cell::Cell;
 use std::f32::consts::PI;
 use std::sync::Arc;
+#[cfg(ecp)]
+use std::time::Instant;
+
 // pbrt
 use crate::blockqueue::BlockQueue;
 use crate::core::camera::{Camera, CameraSample};
@@ -1072,16 +1075,26 @@ impl BDPTIntegrator {
                 let film = &film;
                 let x = x_start.unwrap();
                 let y = y_start.unwrap();
+                #[cfg(ecp)]
+                let mut now = Instant::now();
                 let film_tile =
                     self.render_tile(x, y, n_x_tiles, sample_bounds, tile_size, scene, film);
-                return Some(film.get_tile_image(
+                #[cfg(ecp)]
+                {
+                    println!("render_tile: {}", now.elapsed().as_millis());
+                    now = Instant::now();
+                }
+                let tile_image = film.get_tile_image(
                     &film_tile,
                     tile_size,
                     x as i32,
                     y as i32,
                     sample_bounds,
                     1.0 as Float,
-                ));
+                );
+                #[cfg(ecp)]
+                println!("get_tile_image: {}", now.elapsed().as_millis());
+                return Some(tile_image);
             }
             #[cfg(test)]
             film.write_image(1.0 as Float);

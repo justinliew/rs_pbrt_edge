@@ -1,3 +1,5 @@
+var endpoint = 0;
+
 export function http_request(x, y, tile_size, data) {
 	var xhttp = new XMLHttpRequest();
 	xhttp.onload = function(oEvent) {
@@ -32,7 +34,23 @@ export function http_request(x, y, tile_size, data) {
 			ctx.drawImage(tempcanvas, x*dim, y*dim);
 		}
 	};
-	xhttp.open("POST", "https://pbrt-worker.edgecompute.app/rendertile", true);
+
+	var url;
+	if (endpoint == 0) {
+		url = "https://pbrt-worker.edgecompute.app/rendertile";
+		endpoint = 1;
+	} else if (endpoint == 1) {
+		url = "https://pbrt-worker2.edgecompute.app/rendertile";
+		endpoint = 2;
+	} else if (endpoint == 2) {
+		url = "https://pbrt-worker3.edgecompute.app/rendertile";
+		endpoint = 3;
+	} else {
+		url = "https://pbrt-worker4.edgecompute.app/rendertile";
+		endpoint = 0;
+	}
+
+	xhttp.open("POST", url, true);
 	xhttp.responseType = "arraybuffer";
 
 	var body = {};
