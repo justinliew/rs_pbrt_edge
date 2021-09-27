@@ -2,7 +2,6 @@ use fastly::http::header::HeaderValue;
 use fastly::http::{header, Method, StatusCode};
 use fastly::{mime, Error, Request, Response};
 
-#[cfg(ecp)]
 use std::time::Instant;
 
 #[macro_use]

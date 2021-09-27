@@ -2393,7 +2393,11 @@ pub fn pbrt_init(
     (api_state, bsdf_state)
 }
 
-pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) -> Option<Vec<u8>> {
+pub fn pbrt_cleanup(
+    api_state: &ApiState,
+    ecp_state: &EcpState,
+    integrator_arg: &Option<String>,
+) -> Option<Vec<u8>> {
     #[cfg(ecp)]
     let now = Instant::now();
     // println!("WorldEnd");
@@ -2420,11 +2424,11 @@ pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) -> Op
         let ret = integrator.render(
             &scene,
             num_threads,
-            api_state.ecp_state.is_collector(),
-            api_state.ecp_state.tile_size,
-            api_state.ecp_state.x,
-            api_state.ecp_state.y,
-            &api_state.ecp_state.data,
+            ecp_state.is_collector(),
+            ecp_state.tile_size,
+            ecp_state.x,
+            ecp_state.y,
+            &ecp_state.data,
         );
         #[cfg(ecp)]
         println!("pbrt_cleanup: {}", now.elapsed().as_millis());

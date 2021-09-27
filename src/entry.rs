@@ -26,7 +26,7 @@ use crate::core::api::{
     pbrt_texture, pbrt_transform, pbrt_transform_begin, pbrt_transform_end, pbrt_translate,
     pbrt_world_begin,
 };
-use crate::core::api::{ApiState, BsdfState};
+use crate::core::api::{ApiState, BsdfState, EcpState};
 use crate::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
 use crate::core::paramset::ParamSet;
 use crate::core::pbrt::{Float, Spectrum};
@@ -462,6 +462,7 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
 fn parse_line(
     api_state: &mut ApiState,
     bsdf_state: &mut BsdfState,
+    ecp_state: &mut EcpState,
     identifier: &str,
     str_buf: String,
     integrator_arg: &Option<String>,
@@ -508,9 +509,9 @@ fn parse_line(
             "WorldEnd" => {
                 // WorldEnd
 
-                let output = pbrt_cleanup(api_state, integrator_arg);
+                let output = pbrt_cleanup(api_state, ecp_state, integrator_arg);
                 if let Some(o) = output {
-                    api_state.ecp_state.set_output(&o);
+                    ecp_state.set_output(&o);
                 }
             }
             _ => println!("{} {:?}", identifier, str_buf),
@@ -567,6 +568,7 @@ fn parse_line(
                                 include_file,
                                 api_state,
                                 bsdf_state,
+                                ecp_state,
                                 todo[2],
                                 integrator_arg,
                             );
@@ -799,6 +801,7 @@ fn parse_file(
     filename: String,
     api_state: &mut ApiState,
     bsdf_state: &mut BsdfState,
+    ecp_state: &mut EcpState,
     append: &str,
     integrator_arg: &Option<String>,
 ) {
@@ -847,6 +850,7 @@ fn parse_file(
                                 parse_line(
                                     api_state,
                                     bsdf_state,
+                                    ecp_state,
                                     identifier,
                                     parse_again.clone(),
                                     integrator_arg,
@@ -900,6 +904,7 @@ fn parse_file(
             Rule::EOI => parse_line(
                 api_state,
                 bsdf_state,
+                ecp_state,
                 identifier,
                 parse_again.clone(),
                 integrator_arg,
@@ -917,6 +922,7 @@ fn parse_data(
     data: &str,
     api_state: &mut ApiState,
     bsdf_state: &mut BsdfState,
+    ecp_state: &mut EcpState,
     append: &str,
     integrator_arg: &Option<String>,
 ) {
@@ -944,6 +950,7 @@ fn parse_data(
                                 parse_line(
                                     api_state,
                                     bsdf_state,
+                                    ecp_state,
                                     identifier,
                                     parse_again.clone(),
                                     integrator_arg,
@@ -997,6 +1004,7 @@ fn parse_data(
             Rule::EOI => parse_line(
                 api_state,
                 bsdf_state,
+                ecp_state,
                 identifier,
                 parse_again.clone(),
                 integrator_arg,
@@ -1032,18 +1040,26 @@ pub fn entry(
     // println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
     // println!("WASM code by Justin Liew");
     let (mut api_state, mut bsdf_state) = pbrt_init(0, 1, 0.0, 1.0, 0.0, 1.0);
-    api_state.ecp_state.set_is_collector(collector);
-    api_state.ecp_state.set_tile_size(tile_size);
-    api_state.ecp_state.set_data(data);
+    let mut ecp_state = EcpState::default();
+    ecp_state.set_is_collector(collector);
+    ecp_state.set_tile_size(tile_size);
+    ecp_state.set_data(data);
     if !collector {
-        api_state.ecp_state.x = x;
-        api_state.ecp_state.y = y;
+        ecp_state.x = x;
+        ecp_state.y = y;
     }
 
     let msg = format!("data: {}", data);
     #[cfg(not(feature = "ecp"))]
     log(&msg);
 
-    parse_data(data, &mut api_state, &mut bsdf_state, "", &None);
-    api_state.ecp_state.get_output_for_js()
+    parse_data(
+        data,
+        &mut api_state,
+        &mut bsdf_state,
+        &mut ecp_state,
+        "",
+        &None,
+    );
+    ecp_state.get_output_for_js()
 }
