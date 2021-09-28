@@ -26,7 +26,7 @@ pub fn create_ply_mesh<S: BuildHasher>(
     w2o: &Transform,
     reverse_orientation: bool,
     params: &ParamSet,
-    float_textures: Arc<HashMap<String, Arc<dyn Texture<Float> + Send + Sync>, S>>,
+    float_textures: Arc<HashMap<String, Arc<Texture<Float>>, S>>,
     search_directory: Option<&PathBuf>,
 ) -> Vec<Arc<Shape>> {
     let mut filename: String = params.find_one_string("filename", String::new());
@@ -235,7 +235,7 @@ pub fn create_ply_mesh<S: BuildHasher>(
     }
     let s_ws: Vec<Vector3f> = Vec::new();
     // look up an alpha texture, if applicable
-    let mut alpha_tex: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
+    let mut alpha_tex: Option<Arc<Texture<Float>>> = None;
     let alpha_tex_name: String = params.find_texture("alpha");
     if alpha_tex_name != "" {
         alpha_tex = match float_textures.get(alpha_tex_name.as_str()) {
@@ -249,9 +249,11 @@ pub fn create_ply_mesh<S: BuildHasher>(
             }
         }
     } else if params.find_one_float("alpha", 1.0 as Float) == 0.0 as Float {
-        alpha_tex = Some(Arc::new(ConstantTexture::new(0.0 as Float)));
+        alpha_tex = Some(Arc::new(Texture::Constant(ConstantTexture::new(
+            0.0 as Float,
+        ))));
     }
-    let mut shadow_alpha_tex: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
+    let mut shadow_alpha_tex: Option<Arc<Texture<Float>>> = None;
     let shadow_alpha_tex_name: String = params.find_texture("shadowalpha");
     if shadow_alpha_tex_name != "" {
         shadow_alpha_tex = match float_textures.get(shadow_alpha_tex_name.as_str()) {
@@ -265,7 +267,9 @@ pub fn create_ply_mesh<S: BuildHasher>(
             }
         }
     } else if params.find_one_float("shadowalpha", 1.0 as Float) == 0.0 as Float {
-        shadow_alpha_tex = Some(Arc::new(ConstantTexture::new(0.0 as Float)));
+        shadow_alpha_tex = Some(Arc::new(Texture::Constant(ConstantTexture::new(
+            0.0 as Float,
+        ))));
     }
     let mesh = Arc::new(TriangleMesh::new(
         *o2w,

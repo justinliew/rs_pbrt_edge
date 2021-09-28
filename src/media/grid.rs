@@ -1,5 +1,7 @@
 // std
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
 // pbrt
 use crate::core::geometry::pnt3i_inside_exclusive;
 use crate::core::geometry::{Bounds3f, Bounds3i, Point3f, Point3i, Ray, Vector3f, Vector3i};
@@ -13,6 +15,7 @@ use crate::core::transform::Transform;
 
 // see grid.h
 
+#[derive(Serialize, Deserialize)]
 pub struct GridDensityMedium {
     pub sigma_a: Spectrum,
     pub sigma_s: Spectrum,

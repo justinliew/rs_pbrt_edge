@@ -44,7 +44,7 @@ fn decode_f16(half: u16) -> f32 {
 
 // see goniometric.h
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct GonioPhotometricLight {
     pub p_light: Point3f,
     pub i: Spectrum,

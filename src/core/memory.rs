@@ -12,7 +12,7 @@ fn round_up(x: usize) -> usize {
     (x + BLOCK_SIZE - 1) & !(BLOCK_SIZE - 1)
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct BlockedArray<T> {
     pub data: Vec<T>,
     pub u_res: usize,

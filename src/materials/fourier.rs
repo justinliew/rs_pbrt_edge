@@ -1,5 +1,7 @@
 //std
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
 // pbrt
 use crate::core::api::BsdfState;
 use crate::core::interaction::SurfaceInteraction;
@@ -11,24 +13,21 @@ use crate::core::texture::Texture;
 
 // see fourier.h
 
+#[derive(Serialize, Deserialize)]
 pub struct FourierMaterial {
     pub bsdf_table: Arc<FourierBSDFTable>,
-    pub bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
+    pub bump_map: Option<Arc<Texture<Float>>>,
 }
 
 impl FourierMaterial {
-    pub fn new(
-        bsdf_table: Arc<FourierBSDFTable>,
-        bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
-    ) -> Self {
+    pub fn new(bsdf_table: Arc<FourierBSDFTable>, bump_map: Option<Arc<Texture<Float>>>) -> Self {
         FourierMaterial {
             bump_map,
             bsdf_table,
         }
     }
     pub fn create(mp: &mut TextureParams, bsdf_state: &mut BsdfState) -> Arc<Material> {
-        let bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>> =
-            mp.get_float_texture_or_null("bumpmap");
+        let bump_map: Option<Arc<Texture<Float>>> = mp.get_float_texture_or_null("bumpmap");
         let bsdffile: String = mp.find_filename("bsdffile", String::new());
         if let Some(bsdf_table) = bsdf_state.loaded_bsdfs.get(&bsdffile) {
             // use the BSDF table found

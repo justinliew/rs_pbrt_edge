@@ -1,6 +1,7 @@
 // std
 use std::f32;
 use std::sync::Arc;
+
 // others
 use strum::IntoEnumIterator;
 // pbrt
@@ -13,6 +14,7 @@ use crate::core::spectrum::RGBEnum;
 
 // see homogeneous.h
 
+#[derive(Serialize, Deserialize)]
 pub struct HomogeneousMedium {
     pub sigma_a: Spectrum,
     pub sigma_s: Spectrum,

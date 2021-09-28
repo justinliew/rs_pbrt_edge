@@ -18,26 +18,6 @@ function getStringFromWasm0(ptr, len) {
     return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
 }
 
-function logError(f, args) {
-    try {
-        return f.apply(this, args);
-    } catch (e) {
-        let error = (function () {
-            try {
-                return e instanceof Error ? `${e.message}\n\nStack:\n${e.stack}` : e.toString();
-            } catch(_) {
-                return "<failed to stringify thrown value>";
-            }
-        }());
-        console.error("wasm-bindgen: imported JS function that was not marked as `catch` threw an error:", error);
-        throw e;
-    }
-}
-
-function _assertNum(n) {
-    if (typeof(n) !== 'number') throw new Error('expected a number argument');
-}
-
 let WASM_VECTOR_LEN = 0;
 
 let cachedTextEncoder = new TextEncoder('utf-8');
@@ -56,8 +36,6 @@ const encodeString = (typeof cachedTextEncoder.encodeInto === 'function'
 });
 
 function passStringToWasm0(arg, malloc, realloc) {
-
-    if (typeof(arg) !== 'string') throw new Error('expected a string argument');
 
     if (realloc === undefined) {
         const buf = cachedTextEncoder.encode(arg);
@@ -87,7 +65,7 @@ function passStringToWasm0(arg, malloc, realloc) {
         ptr = realloc(ptr, len, len = offset + arg.length * 3);
         const view = getUint8Memory0().subarray(ptr + offset, ptr + len);
         const ret = encodeString(arg, view);
-        if (ret.read !== arg.length) throw new Error('failed to pass whole string');
+
         offset += ret.written;
     }
 
@@ -114,7 +92,6 @@ function getArrayU8FromWasm0(ptr, len) {
 export function lib_entry(tile_size, data) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        _assertNum(tile_size);
         var ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
         wasm.lib_entry(retptr, tile_size, ptr0, len0);
@@ -165,18 +142,15 @@ async function init(input) {
     }
     const imports = {};
     imports.wbg = {};
-    imports.wbg.__wbg_httprequest_38e26ba6a476840f = function() { return logError(function (arg0, arg1, arg2, arg3, arg4) {
+    imports.wbg.__wbg_httprequest_38e26ba6a476840f = function(arg0, arg1, arg2, arg3, arg4) {
         try {
             http_request(arg0 >>> 0, arg1 >>> 0, arg2, getStringFromWasm0(arg3, arg4));
         } finally {
             wasm.__wbindgen_free(arg3, arg4);
         }
-    }, arguments) };
-    imports.wbg.__wbg_log_e6c34f7a51e0a901 = function() { return logError(function (arg0, arg1) {
+    };
+    imports.wbg.__wbg_log_e6c34f7a51e0a901 = function(arg0, arg1) {
         console.log(getStringFromWasm0(arg0, arg1));
-    }, arguments) };
-    imports.wbg.__wbindgen_throw = function(arg0, arg1) {
-        throw new Error(getStringFromWasm0(arg0, arg1));
     };
 
     if (typeof input === 'string' || (typeof Request === 'function' && input instanceof Request) || (typeof URL === 'function' && input instanceof URL)) {

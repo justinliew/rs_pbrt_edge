@@ -1,6 +1,8 @@
 // std
+use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
 use std::sync::Arc;
+
 // pbrt
 use crate::core::geometry::{nrm_abs_dot_vec3f, nrm_dot_vec3f, vec3_coordinate_system};
 use crate::core::geometry::{Normal3f, Point2f, Ray, Vector3f, XYEnum};
@@ -16,6 +18,7 @@ use crate::core::transform::Transform;
 
 // see diffuse.h
 
+#[derive(Serialize, Deserialize)]
 pub struct DiffuseAreaLight {
     pub l_emit: Spectrum,
     pub shape: Arc<Shape>,

@@ -13,7 +13,7 @@ use crate::core::transform::Transform;
 
 // see disk.h
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Disk {
     pub height: Float,
     pub radius: Float,

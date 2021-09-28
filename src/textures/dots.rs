@@ -1,25 +1,29 @@
 // std
+use std::ops::{Add, AddAssign, Div, Mul};
 use std::sync::Arc;
+
 // pbrt
 use crate::core::geometry::{Point2f, Vector2f};
 use crate::core::interaction::SurfaceInteraction;
+use crate::core::mipmap::Clampable;
 use crate::core::pbrt::Float;
 use crate::core::texture::noise_flt;
 use crate::core::texture::{Texture, TextureMapping2D};
 
 // see dots.h
 
+#[derive(Serialize, Deserialize)]
 pub struct DotsTexture<T> {
     pub mapping: Box<TextureMapping2D>,
-    pub outside_dot: Arc<dyn Texture<T> + Send + Sync>,
-    pub inside_dot: Arc<dyn Texture<T> + Send + Sync>,
+    pub outside_dot: Arc<Texture<T>>,
+    pub inside_dot: Arc<Texture<T>>,
 }
 
 impl<T: Copy> DotsTexture<T> {
     pub fn new(
         mapping: Box<TextureMapping2D>,
-        outside_dot: Arc<dyn Texture<T> + Send + Sync>,
-        inside_dot: Arc<dyn Texture<T> + Send + Sync>,
+        outside_dot: Arc<Texture<T>>,
+        inside_dot: Arc<Texture<T>>,
     ) -> Self {
         DotsTexture {
             mapping,
@@ -29,8 +33,21 @@ impl<T: Copy> DotsTexture<T> {
     }
 }
 
-impl<T: Copy> Texture<T> for DotsTexture<T> {
-    fn evaluate(&self, si: &SurfaceInteraction) -> T {
+impl<T: Copy> DotsTexture<T> {
+    pub fn evaluate(&self, si: &SurfaceInteraction) -> T
+    where
+        T: Copy
+            + From<Float>
+            + Add<Output = T>
+            + Mul<Output = T>
+            + Mul<Float, Output = T>
+            + Div<Float, Output = T>
+            + std::default::Default
+            + num::Zero
+            + std::clone::Clone
+            + AddAssign
+            + Clampable,
+    {
         // compute cell indices for dots
         let mut dpdx: Vector2f = Vector2f::default();
         let mut dpdy: Vector2f = Vector2f::default();

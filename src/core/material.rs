@@ -2,8 +2,10 @@
 //! material implementations must provide.
 
 //std
+use serde::{Deserialize, Serialize};
 use std::cell::Cell;
 use std::sync::Arc;
+
 // pbrt
 use crate::core::geometry::vec3_cross_vec3;
 use crate::core::geometry::{Normal3f, Vector2f, Vector3f};
@@ -35,6 +37,7 @@ pub enum TransportMode {
     Importance,
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum Material {
     Disney(Box<DisneyMaterial>),
     Fourier(Box<FourierMaterial>),
@@ -112,7 +115,7 @@ impl Material {
     }
     /// Computing the effect of bump mapping at the point being shaded
     /// given a particular displacement texture.
-    pub fn bump(d: &Arc<dyn Texture<Float> + Send + Sync>, si: &mut SurfaceInteraction)
+    pub fn bump(d: &Arc<Texture<Float>>, si: &mut SurfaceInteraction)
     where
         Self: Sized,
     {

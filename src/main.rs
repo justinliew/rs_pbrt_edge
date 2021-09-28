@@ -7,6 +7,8 @@ use std::time::Instant;
 #[macro_use]
 extern crate serde;
 
+use serde::{Deserialize, Serialize};
+
 #[macro_use]
 extern crate impl_ops;
 

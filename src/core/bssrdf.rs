@@ -3,10 +3,12 @@
 //! given incident differential irradiance at another point.
 
 //std
+use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
 use std::cell::Cell;
 use std::f32::consts::PI;
 use std::sync::Arc;
+
 // others
 use strum::IntoEnumIterator;
 // pbrt
@@ -455,6 +457,7 @@ impl Clone for TabulatedBssrdf {
         }
     }
 }
+#[derive(Serialize, Deserialize)]
 pub struct BssrdfTable {
     pub n_rho_samples: i32,
     pub n_radius_samples: i32,

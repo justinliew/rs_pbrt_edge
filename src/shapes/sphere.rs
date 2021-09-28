@@ -18,7 +18,7 @@ use crate::core::transform::Transform;
 
 // see sphere.h
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Sphere {
     pub radius: Float,
     pub z_min: Float,

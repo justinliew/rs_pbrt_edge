@@ -53,9 +53,11 @@
 //! dimensions.
 
 // std
+use serde::{Deserialize, Serialize};
 use std::cell::Cell;
 use std::f32::consts::PI;
 use std::ops::{Add, Mul};
+
 // pbrt
 use crate::core::geometry::{
     bnd3_union_bnd3f, bnd3_union_pnt3f, nrm_faceforward_nrm, vec3_cross_vec3, vec3_dot_vec3f,
@@ -69,7 +71,7 @@ use crate::core::quaternion::{quat_dot_quat, quat_normalize, quat_slerp};
 
 // see transform.h
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Deserialize, Serialize)]
 pub struct Matrix4x4 {
     pub m: [[Float; 4]; 4],
 }
@@ -248,7 +250,7 @@ pub fn mtx_mul(m1: &Matrix4x4, m2: &Matrix4x4) -> Matrix4x4 {
     r
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Transform {
     pub m: Matrix4x4,
     pub m_inv: Matrix4x4,
@@ -885,7 +887,7 @@ impl Mul for Transform {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct DerivativeTerm {
     kc: Float,
     kx: Float,
@@ -899,7 +901,7 @@ impl DerivativeTerm {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct AnimatedTransform {
     start_transform: Transform,
     end_transform: Transform,

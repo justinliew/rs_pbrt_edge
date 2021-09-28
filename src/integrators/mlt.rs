@@ -1,7 +1,6 @@
 // std
 use std::ops::DerefMut;
 use std::sync::Arc;
-use std::thread;
 // pbrt
 use crate::core::camera::Camera;
 use crate::core::film::Film;
@@ -406,7 +405,7 @@ impl MLTIntegrator {
     pub fn render(&self, scene: &Scene, num_threads: u8) {
         let mut num_cores: usize;
         let num_cores_init = if num_threads == 0_u8 {
-			1
+            1
         } else {
             num_threads as usize
         };

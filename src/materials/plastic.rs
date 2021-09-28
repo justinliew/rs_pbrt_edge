@@ -1,5 +1,7 @@
 //std
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
 // pbrt
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
@@ -15,20 +17,21 @@ use crate::core::texture::Texture;
 
 /// Plastic can be modeled as a mixture of a diffuse and glossy
 /// scattering function.
+#[derive(Serialize, Deserialize)]
 pub struct PlasticMaterial {
-    pub kd: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.25
-    pub ks: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.25
-    pub roughness: Arc<dyn Texture<Float> + Sync + Send>, // default: 0.1
-    pub bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>>,
+    pub kd: Arc<Texture<Spectrum>>,     // default: 0.25
+    pub ks: Arc<Texture<Spectrum>>,     // default: 0.25
+    pub roughness: Arc<Texture<Float>>, // default: 0.1
+    pub bump_map: Option<Arc<Texture<Float>>>,
     pub remap_roughness: bool,
 }
 
 impl PlasticMaterial {
     pub fn new(
-        kd: Arc<dyn Texture<Spectrum> + Send + Sync>,
-        ks: Arc<dyn Texture<Spectrum> + Send + Sync>,
-        roughness: Arc<dyn Texture<Float> + Sync + Send>,
-        bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
+        kd: Arc<Texture<Spectrum>>,
+        ks: Arc<Texture<Spectrum>>,
+        roughness: Arc<Texture<Float>>,
+        bump_map: Option<Arc<Texture<Float>>>,
         remap_roughness: bool,
     ) -> Self {
         PlasticMaterial {

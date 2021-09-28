@@ -15,7 +15,7 @@ use crate::core::transform::Transform;
 
 // see point.h
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct PointLight {
     // private data (see point.h)
     pub p_light: Point3f,

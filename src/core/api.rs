@@ -3,6 +3,7 @@
 //! *pbrt_*.
 
 // std
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::path::PathBuf;
@@ -98,7 +99,7 @@ use crate::textures::dots::DotsTexture;
 use crate::textures::fbm::FBmTexture;
 use crate::textures::imagemap::ImageTexture;
 use crate::textures::imagemap::{convert_to_float, convert_to_spectrum};
-use crate::textures::marble::MarbleTexture;
+//use crate::textures::marble::MarbleTexture;
 use crate::textures::mix::MixTexture;
 use crate::textures::scale::ScaleTexture;
 use crate::textures::windy::WindyTexture;
@@ -178,20 +179,20 @@ impl EcpState {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct ApiState {
     pixelsamples: u32,
     number_of_threads: u8,
     pub search_directory: Option<Box<PathBuf>>,
     cur_transform: TransformSet,
     active_transform_bits: u8,
-    named_coordinate_systems: HashMap<&'static str, TransformSet>,
+    named_coordinate_systems: HashMap<String, TransformSet>,
     render_options: RenderOptions,
     graphics_state: GraphicsState,
     pushed_graphics_states: Vec<GraphicsState>,
     pushed_transforms: Vec<TransformSet>,
     pushed_active_transform_bits: Vec<u8>,
     param_set: ParamSet,
-    pub ecp_state: EcpState,
 }
 
 impl Default for ApiState {
@@ -228,12 +229,11 @@ impl Default for ApiState {
             pushed_transforms: Vec::new(),
             pushed_active_transform_bits: Vec::new(),
             param_set: ParamSet::default(),
-            ecp_state: EcpState::default(),
         }
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct TransformSet {
     pub t: [Transform; 2],
 }
@@ -249,6 +249,7 @@ impl TransformSet {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct RenderOptions {
     pub transform_start_time: Float,
     pub transform_end_time: Float,
@@ -644,12 +645,12 @@ impl Default for RenderOptions {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct GraphicsState {
     pub current_inside_medium: String,
     pub current_outside_medium: String,
-    pub float_textures: Arc<HashMap<String, Arc<dyn Texture<Float> + Send + Sync>>>,
-    pub spectrum_textures: Arc<HashMap<String, Arc<dyn Texture<Spectrum> + Send + Sync>>>,
+    pub float_textures: Arc<HashMap<String, Arc<Texture<Float>>>>,
+    pub spectrum_textures: Arc<HashMap<String, Arc<Texture<Spectrum>>>>,
     pub material_params: ParamSet,
     pub material: String,
     pub named_materials: Arc<HashMap<String, Option<Arc<Material>>>>,
@@ -661,9 +662,8 @@ pub struct GraphicsState {
 
 impl GraphicsState {
     pub fn new() -> Self {
-        let float_textures: Arc<HashMap<String, Arc<dyn Texture<Float> + Send + Sync>>> =
-            Arc::new(HashMap::new());
-        let spectrum_textures: Arc<HashMap<String, Arc<dyn Texture<Spectrum> + Send + Sync>>> =
+        let float_textures: Arc<HashMap<String, Arc<Texture<Float>>>> = Arc::new(HashMap::new());
+        let spectrum_textures: Arc<HashMap<String, Arc<Texture<Spectrum>>>> =
             Arc::new(HashMap::new());
         let mut tp: TextureParams = TextureParams::new(
             ParamSet::default(),
@@ -767,7 +767,7 @@ fn create_material(api_state: &ApiState, bsdf_state: &mut BsdfState) -> Option<A
                     panic!("Material \"{}\" unknown.", m2);
                 }
             };
-            let scale: Arc<dyn Texture<Spectrum> + Send + Sync> =
+            let scale: Arc<Texture<Spectrum>> =
                 mp.get_spectrum_texture("amount", Spectrum::new(0.5));
             if let Some(m1) = mat1 {
                 if let Some(m2) = mat2 {
@@ -801,8 +801,8 @@ fn create_material(api_state: &ApiState, bsdf_state: &mut BsdfState) -> Option<A
             );
         }
     }
-    let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
-    let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
+    let kd = Arc::new(Texture::Constant(ConstantTexture::new(Spectrum::new(0.5))));
+    let sigma = Arc::new(Texture::Constant(ConstantTexture::new(0.0 as Float)));
     Some(Arc::new(Material::Matte(Box::new(MatteMaterial::new(
         kd, sigma, None,
     )))))
@@ -1136,24 +1136,24 @@ fn make_texture(api_state: &mut ApiState) {
         // TODO: WARN_IF_ANIMATED_TRANSFORM("Texture");
         // MakeFloatTexture(texname, curTransform[0], tp);
         if api_state.param_set.tex_name == "constant" {
-            let ct = Arc::new(ConstantTexture::<Float>::new(
+            let ct = Arc::new(Texture::Constant(ConstantTexture::<Float>::new(
                 tp.find_float("value", 1.0 as Float),
-            ));
+            )));
             Arc::make_mut(&mut api_state.graphics_state.float_textures)
                 .insert(api_state.param_set.name.clone(), ct);
         } else if api_state.param_set.tex_name == "scale" {
-            let ft = Arc::new(ScaleTexture::<Float>::new(
+            let ft = Arc::new(Texture::Scale(ScaleTexture::<Float>::new(
                 tp.get_float_texture("tex1", 1.0 as Float),
                 tp.get_float_texture("tex2", 1.0 as Float),
-            ));
+            )));
             Arc::make_mut(&mut api_state.graphics_state.float_textures)
                 .insert(api_state.param_set.name.clone(), ft);
         } else if api_state.param_set.tex_name == "mix" {
-            let mt = Arc::new(MixTexture::<Float>::new(
+            let mt = Arc::new(Texture::Mix(MixTexture::<Float>::new(
                 tp.get_float_texture("tex1", 0.0 as Float),
                 tp.get_float_texture("tex2", 1.0 as Float),
                 tp.get_float_texture("amount", 0.5 as Float),
-            ));
+            )));
             Arc::make_mut(&mut api_state.graphics_state.float_textures)
                 .insert(api_state.param_set.name.clone(), mt);
         } else if api_state.param_set.tex_name == "bilerp" {
@@ -1234,7 +1234,7 @@ fn make_texture(api_state: &mut ApiState) {
             let gamma: bool = tp.find_bool("gamma", true);
 
             if let Some(mapping) = map {
-                let ft = Arc::new(ImageTexture::new(
+                let ft = Arc::new(Texture::Image(ImageTexture::new(
                     mapping,
                     filename,
                     do_trilinear,
@@ -1243,7 +1243,7 @@ fn make_texture(api_state: &mut ApiState) {
                     scale,
                     gamma,
                     convert_to_float,
-                ));
+                )));
                 Arc::make_mut(&mut api_state.graphics_state.float_textures)
                     .insert(api_state.param_set.name.clone(), ft);
             }
@@ -1301,11 +1301,11 @@ fn make_texture(api_state: &mut ApiState) {
                 panic!("2D texture mapping \"{}\" unknown", mapping);
             }
             if let Some(mapping) = map {
-                let dt = Arc::new(DotsTexture::new(
+                let dt = Arc::new(Texture::Dots(DotsTexture::new(
                     mapping,
                     tp.get_float_texture("inside", 1.0 as Float),
                     tp.get_float_texture("outside", 0.0 as Float),
-                ));
+                )));
                 Arc::make_mut(&mut api_state.graphics_state.float_textures)
                     .insert(api_state.param_set.name.clone(), dt);
             }
@@ -1320,7 +1320,7 @@ fn make_texture(api_state: &mut ApiState) {
             ));
             let octaves: i32 = tp.find_int("octaves", 8_i32);
             let roughness: Float = tp.find_float("roughness", 0.5 as Float);
-            let ft = Arc::new(FBmTexture::new(map, octaves, roughness));
+            let ft = Arc::new(Texture::FBm(FBmTexture::new(map, octaves, roughness)));
             Arc::make_mut(&mut api_state.graphics_state.float_textures)
                 .insert(api_state.param_set.name.clone(), ft);
         } else if api_state.param_set.tex_name == "wrinkled" {
@@ -1334,11 +1334,13 @@ fn make_texture(api_state: &mut ApiState) {
             ));
             let octaves: i32 = tp.find_int("octaves", 8_i32);
             let roughness: Float = tp.find_float("roughness", 0.5 as Float);
-            let ft = Arc::new(WrinkledTexture::new(map, octaves, roughness));
+            let ft = Arc::new(Texture::Wrinkled(WrinkledTexture::new(
+                map, octaves, roughness,
+            )));
             Arc::make_mut(&mut api_state.graphics_state.float_textures)
                 .insert(api_state.param_set.name.clone(), ft);
-        } else if api_state.param_set.tex_name == "marble" {
-            println!("TODO: CreateMarbleFloatTexture");
+        // } else if api_state.param_set.tex_name == "marble" {
+        //     println!("TODO: CreateMarbleFloatTexture");
         } else if api_state.param_set.tex_name == "windy" {
             // CreateWindyFloatTexture
             let tex_2_world: Transform = Transform {
@@ -1348,7 +1350,7 @@ fn make_texture(api_state: &mut ApiState) {
             let map: Box<TextureMapping3D> = Box::new(TextureMapping3D::Identity(
                 IdentityMapping3D::new(tex_2_world),
             ));
-            let ft = Arc::new(WindyTexture::new(map));
+            let ft = Arc::new(Texture::Windy(WindyTexture::new(map)));
             Arc::make_mut(&mut api_state.graphics_state.float_textures)
                 .insert(api_state.param_set.name.clone(), ft);
         } else if api_state.param_set.tex_name == "ptex" {
@@ -1371,25 +1373,23 @@ fn make_texture(api_state: &mut ApiState) {
         // TODO: WARN_IF_ANIMATED_TRANSFORM("Texture");
         // MakeSpectrumTexture(texname, curTransform[0], tp);
         if api_state.param_set.tex_name == "constant" {
-            let ct = Arc::new(ConstantTexture::new(
+            let ct = Arc::new(Texture::Constant(ConstantTexture::new(
                 tp.find_spectrum("value", Spectrum::new(1.0)),
-            ));
+            )));
             Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                 .insert(api_state.param_set.name.clone(), ct);
         } else if api_state.param_set.tex_name == "scale" {
-            let tex1: Arc<dyn Texture<Spectrum> + Send + Sync> =
-                tp.get_spectrum_texture("tex1", Spectrum::new(1.0));
-            let tex2: Arc<dyn Texture<Spectrum> + Send + Sync> =
-                tp.get_spectrum_texture("tex2", Spectrum::new(0.0));
-            let st = Arc::new(ScaleTexture::<Spectrum>::new(tex1, tex2));
+            let tex1: Arc<Texture<Spectrum>> = tp.get_spectrum_texture("tex1", Spectrum::new(1.0));
+            let tex2: Arc<Texture<Spectrum>> = tp.get_spectrum_texture("tex2", Spectrum::new(0.0));
+            let st = Arc::new(Texture::Scale(ScaleTexture::<Spectrum>::new(tex1, tex2)));
             Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                 .insert(api_state.param_set.name.clone(), st);
         } else if api_state.param_set.tex_name == "mix" {
-            let mt = Arc::new(MixTexture::<Spectrum>::new(
+            let mt = Arc::new(Texture::Mix(MixTexture::<Spectrum>::new(
                 tp.get_spectrum_texture("tex1", Spectrum::new(0.0)),
                 tp.get_spectrum_texture("tex2", Spectrum::new(1.0)),
                 tp.get_float_texture("amount", 0.5 as Float),
-            ));
+            )));
             Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                 .insert(api_state.param_set.name.clone(), mt);
         } else if api_state.param_set.tex_name == "bilerp" {
@@ -1470,7 +1470,7 @@ fn make_texture(api_state: &mut ApiState) {
             let gamma: bool = tp.find_bool("gamma", true);
 
             if let Some(mapping) = map {
-                let st = Arc::new(ImageTexture::new(
+                let st = Arc::new(Texture::Image(ImageTexture::new(
                     mapping,
                     filename,
                     do_trilinear,
@@ -1479,7 +1479,7 @@ fn make_texture(api_state: &mut ApiState) {
                     scale,
                     gamma,
                     convert_to_spectrum,
-                ));
+                )));
                 Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                     .insert(api_state.param_set.name.clone(), st);
             }
@@ -1491,10 +1491,8 @@ fn make_texture(api_state: &mut ApiState) {
             if dim != 2 && dim != 3 {
                 panic!("{} dimensional checkerboard texture not supported", dim);
             }
-            let tex1: Arc<dyn Texture<Spectrum> + Send + Sync> =
-                tp.get_spectrum_texture("tex1", Spectrum::new(1.0));
-            let tex2: Arc<dyn Texture<Spectrum> + Send + Sync> =
-                tp.get_spectrum_texture("tex2", Spectrum::new(0.0));
+            let tex1: Arc<Texture<Spectrum>> = tp.get_spectrum_texture("tex1", Spectrum::new(1.0));
+            let tex2: Arc<Texture<Spectrum>> = tp.get_spectrum_texture("tex2", Spectrum::new(0.0));
             if dim == 2 {
                 let map: Option<Box<TextureMapping2D>>;
                 let mapping: String = tp.find_string("mapping", String::from("uv"));
@@ -1545,7 +1543,9 @@ fn make_texture(api_state: &mut ApiState) {
                 }
                 // TODO: aamode
                 if let Some(mapping) = map {
-                    let st = Arc::new(Checkerboard2DTexture::new(mapping, tex1, tex2));
+                    let st = Arc::new(Texture::Checkerboard(Checkerboard2DTexture::new(
+                        mapping, tex1, tex2,
+                    )));
                     Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                         .insert(api_state.param_set.name.clone(), st);
                 }
@@ -1602,12 +1602,12 @@ fn make_texture(api_state: &mut ApiState) {
             } else {
                 panic!("2D texture mapping \"{}\" unknown", mapping);
             }
-            let inside: Arc<dyn Texture<Spectrum> + Send + Sync> =
+            let inside: Arc<Texture<Spectrum>> =
                 tp.get_spectrum_texture("inside", Spectrum::new(1.0));
-            let outside: Arc<dyn Texture<Spectrum> + Send + Sync> =
+            let outside: Arc<Texture<Spectrum>> =
                 tp.get_spectrum_texture("outside", Spectrum::new(0.0));
             if let Some(mapping) = map {
-                let dt = Arc::new(DotsTexture::new(mapping, inside, outside));
+                let dt = Arc::new(Texture::Dots(DotsTexture::new(mapping, inside, outside)));
                 Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                     .insert(api_state.param_set.name.clone(), dt);
             }
@@ -1622,7 +1622,7 @@ fn make_texture(api_state: &mut ApiState) {
             ));
             let octaves: i32 = tp.find_int("octaves", 8_i32);
             let roughness: Float = tp.find_float("roughness", 0.5 as Float);
-            let ft = Arc::new(FBmTexture::new(map, octaves, roughness));
+            let ft = Arc::new(Texture::FBm(FBmTexture::new(map, octaves, roughness)));
             Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                 .insert(api_state.param_set.name.clone(), ft);
         } else if api_state.param_set.tex_name == "wrinkled" {
@@ -1636,26 +1636,28 @@ fn make_texture(api_state: &mut ApiState) {
             ));
             let octaves: i32 = tp.find_int("octaves", 8_i32);
             let roughness: Float = tp.find_float("roughness", 0.5 as Float);
-            let ft = Arc::new(WrinkledTexture::new(map, octaves, roughness));
+            let ft = Arc::new(Texture::Wrinkled(WrinkledTexture::new(
+                map, octaves, roughness,
+            )));
             Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                 .insert(api_state.param_set.name.clone(), ft);
-        } else if api_state.param_set.tex_name == "marble" {
-            let tex_2_world: Transform = Transform {
-                m: api_state.cur_transform.t[0].m,
-                m_inv: api_state.cur_transform.t[0].m_inv,
-            };
-            let map: Box<TextureMapping3D> = Box::new(TextureMapping3D::Identity(
-                IdentityMapping3D::new(tex_2_world),
-            ));
-            let octaves: i32 = tp.find_int("octaves", 8_i32);
-            let roughness: Float = tp.find_float("roughness", 0.5 as Float);
-            let scale: Float = tp.find_float("scale", 1.0 as Float);
-            let variation: Float = tp.find_float("variation", 0.2 as Float);
-            let mt = Arc::new(MarbleTexture::new(
-                map, octaves, roughness, scale, variation,
-            ));
-            Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
-                .insert(api_state.param_set.name.clone(), mt);
+        // } else if api_state.param_set.tex_name == "marble" {
+        //     let tex_2_world: Transform = Transform {
+        //         m: api_state.cur_transform.t[0].m,
+        //         m_inv: api_state.cur_transform.t[0].m_inv,
+        //     };
+        //     let map: Box<TextureMapping3D> = Box::new(TextureMapping3D::Identity(
+        //         IdentityMapping3D::new(tex_2_world),
+        //     ));
+        //     let octaves: i32 = tp.find_int("octaves", 8_i32);
+        //     let roughness: Float = tp.find_float("roughness", 0.5 as Float);
+        //     let scale: Float = tp.find_float("scale", 1.0 as Float);
+        //     let variation: Float = tp.find_float("variation", 0.2 as Float);
+        //     let mt = Arc::new(Texture::Marble(MarbleTexture::new(
+        //         map, octaves, roughness, scale, variation,
+        //     )));
+        //     Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
+        //         .insert(api_state.param_set.name.clone(), mt);
         } else if api_state.param_set.tex_name == "windy" {
             // CreateWindySpectrumTexture
             let tex_2_world: Transform = Transform {
@@ -1665,7 +1667,7 @@ fn make_texture(api_state: &mut ApiState) {
             let map: Box<TextureMapping3D> = Box::new(TextureMapping3D::Identity(
                 IdentityMapping3D::new(tex_2_world),
             ));
-            let ft = Arc::new(WindyTexture::new(map));
+            let ft = Arc::new(Texture::Windy(WindyTexture::new(map)));
             Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                 .insert(api_state.param_set.name.clone(), ft);
         } else {
@@ -2559,7 +2561,7 @@ pub fn pbrt_coord_sys_transform(api_state: &mut ApiState, params: ParamSet) {
     api_state.param_set = params;
     match api_state
         .named_coordinate_systems
-        .get(api_state.param_set.name.as_str())
+        .get(&api_state.param_set.name)
     {
         Some(transform_set) => {
             api_state.cur_transform.t[0] = transform_set.t[0];
@@ -2660,7 +2662,7 @@ pub fn pbrt_camera(api_state: &mut ApiState, params: ParamSet) {
     api_state.render_options.camera_to_world.t[1] =
         Transform::inverse(&api_state.cur_transform.t[1]);
     api_state.named_coordinate_systems.insert(
-        "camera",
+        "camera".to_string(),
         TransformSet {
             t: [
                 api_state.render_options.camera_to_world.t[0],
@@ -2694,7 +2696,7 @@ pub fn pbrt_world_begin(api_state: &mut ApiState) {
     api_state.cur_transform.t[1] = Transform::default();
     api_state.active_transform_bits = 3_u8; // 0x11
     api_state.named_coordinate_systems.insert(
-        "world",
+        "world".to_string(),
         TransformSet {
             t: [Transform::default(); 2],
         },

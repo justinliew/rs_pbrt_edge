@@ -2,6 +2,8 @@
 //! source of illumination so that some light is reflected from them
 //! to the camera sensor.
 
+use serde::{Deserialize, Serialize};
+
 // pbrt
 use crate::core::geometry::{Normal3f, Point2f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -26,6 +28,7 @@ pub enum LightFlags {
     Infinite = 8,
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum Light {
     DiffuseArea(Box<DiffuseAreaLight>),
     Distant(Box<DistantLight>),

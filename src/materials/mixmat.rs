@@ -1,4 +1,5 @@
 //std
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 // pbrt
 use crate::core::bssrdf::SeparableBssrdfAdapter;
@@ -25,18 +26,15 @@ use crate::materials::hair::HairBSDF;
 /// The mix material takes two other materials and a texture and uses
 /// the value returned by the texture to blend between the two
 /// materials at the point being shaded.
+#[derive(Serialize, Deserialize)]
 pub struct MixMaterial {
     pub m1: Arc<Material>,
     pub m2: Arc<Material>,
-    pub scale: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.5
+    pub scale: Arc<Texture<Spectrum>>, // default: 0.5
 }
 
 impl MixMaterial {
-    pub fn new(
-        m1: Arc<Material>,
-        m2: Arc<Material>,
-        scale: Arc<dyn Texture<Spectrum> + Send + Sync>,
-    ) -> Self {
+    pub fn new(m1: Arc<Material>, m2: Arc<Material>, scale: Arc<Texture<Spectrum>>) -> Self {
         MixMaterial { m1, m2, scale }
     }
     // Material

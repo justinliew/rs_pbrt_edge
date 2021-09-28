@@ -5,7 +5,12 @@
 //! textures.
 
 // std
+use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
+use std::ops::{Add, AddAssign, Div, Mul};
+
+use crate::core::mipmap::Clampable;
+
 // pbrt
 use crate::core::geometry::{spherical_phi, spherical_theta, vec3_dot_vec3f};
 use crate::core::geometry::{Point2f, Point3f, Vector2f, Vector3f, XYEnum};
@@ -14,6 +19,17 @@ use crate::core::pbrt::Float;
 use crate::core::pbrt::{clamp_t, lerp, log_2};
 use crate::core::pbrt::{INV_2_PI, INV_PI};
 use crate::core::transform::Transform;
+
+use crate::textures::checkerboard::Checkerboard2DTexture;
+use crate::textures::constant::ConstantTexture;
+use crate::textures::dots::DotsTexture;
+use crate::textures::fbm::FBmTexture;
+use crate::textures::imagemap::ImageTexture;
+//use crate::textures::marble::MarbleTexture;
+use crate::textures::mix::MixTexture;
+use crate::textures::scale::ScaleTexture;
+use crate::textures::windy::WindyTexture;
+use crate::textures::wrinkled::WrinkledTexture;
 
 // see texture.h
 
@@ -48,6 +64,7 @@ pub const NOISE_PERM: [u8; 2 * NOISE_PERM_SIZE] = [
     222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180,
 ];
 
+#[derive(Serialize, Deserialize)]
 pub enum TextureMapping2D {
     UV(UVMapping2D),
     Spherical(SphericalMapping2D),
@@ -73,6 +90,7 @@ impl TextureMapping2D {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub enum TextureMapping3D {
     Identity(IdentityMapping3D),
 }
@@ -90,7 +108,7 @@ impl TextureMapping3D {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct UVMapping2D {
     pub su: Float,
     pub sv: Float,
@@ -121,7 +139,7 @@ impl UVMapping2D {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct SphericalMapping2D {
     sphere: Point2f,
     pub world_to_texture: Transform,
@@ -175,7 +193,7 @@ impl SphericalMapping2D {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct CylindricalMapping2D {
     pub world_to_texture: Transform,
 }
@@ -222,7 +240,7 @@ impl CylindricalMapping2D {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct PlanarMapping2D {
     pub vs: Vector3f,
     pub vt: Vector3f,
@@ -257,7 +275,7 @@ impl PlanarMapping2D {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct IdentityMapping3D {
     pub world_to_texture: Transform,
 }
@@ -283,9 +301,65 @@ impl IdentityMapping3D {
     }
 }
 
-pub trait Texture<T> {
-    fn evaluate(&self, si: &SurfaceInteraction) -> T;
+#[derive(Serialize, Deserialize)]
+pub enum Texture<T> {
+    Checkerboard(Checkerboard2DTexture<T>),
+    Constant(ConstantTexture<T>),
+    Dots(DotsTexture<T>),
+    FBm(FBmTexture),
+    Image(ImageTexture<T>),
+    //    Marble(MarbleTexture),
+    Mix(MixTexture<T>),
+    Scale(ScaleTexture<T>),
+    Windy(WindyTexture),
+    Wrinkled(WrinkledTexture),
 }
+
+// T: std::default::Default
+// + num::Zero
+// + std::clone::Clone
+// + Add<T, Output = T>
+// + AddAssign
+// + Clampable
+// + Copy
+// + Div<Float, Output = T>
+// + Mul<T, Output = T>
+// + Mul<Float, Output = T>,
+
+//: Copy + From<Float> + Add<Output = T> + Mul<Output = T> + Div<Output = T>>
+impl<
+        T: Copy
+            + From<Float>
+            + Add<Output = T>
+            + Mul<Output = T>
+            + Mul<Float, Output = T>
+            + Div<Float, Output = T>
+            + std::default::Default
+            + num::Zero
+            + std::clone::Clone
+            + AddAssign
+            + Clampable,
+    > Texture<T>
+{
+    pub fn evaluate(&self, si: &SurfaceInteraction) -> T {
+        match self {
+            Texture::Checkerboard(c) => c.evaluate(si),
+            Texture::Constant(c) => c.evaluate(si),
+            Texture::Dots(d) => d.evaluate(si),
+            Texture::FBm(f) => f.evaluate(si),
+            Texture::Image(i) => i.evaluate(si),
+            //            Texture::Marble(m) => m.evaluate(si),
+            Texture::Mix(m) => m.evaluate(si),
+            Texture::Scale(s) => s.evaluate(si),
+            Texture::Windy(w) => w.evaluate(si),
+            Texture::Wrinkled(w) => w.evaluate(si),
+        }
+    }
+}
+
+// pub trait Texture<T> {
+//     fn evaluate(&self, si: &SurfaceInteraction) -> T;
+// }
 
 pub fn smooth_step(min: Float, max: Float, value: Float) -> Float {
     let v: Float = clamp_t((value - min) / (max - min), 0.0 as Float, 1.0 as Float);

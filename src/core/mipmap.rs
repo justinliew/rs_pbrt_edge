@@ -16,7 +16,7 @@ use crate::core::texture::lanczos;
 
 const WEIGHT_LUT_SIZE: usize = 128;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ImageWrap {
     Repeat,
     Black,
@@ -29,6 +29,7 @@ pub struct ResampleWeight {
     pub weight: [Float; 4],
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct MipMap<T> {
     // MIPMap Private Data
     pub do_trilinear: bool,
@@ -37,7 +38,7 @@ pub struct MipMap<T> {
     pub resolution: Point2i,
     pub pyramid: Vec<BlockedArray<T>>,
     // TODO: static Float weightLut[WeightLUTSize];
-    pub weight_lut: [Float; WEIGHT_LUT_SIZE],
+    pub weight_lut: Vec<Float>,
 }
 
 impl<T> MipMap<T>
@@ -149,7 +150,7 @@ where
             wrap_mode,
             resolution,
             pyramid: Vec::new(),
-            weight_lut: [0.0 as Float; WEIGHT_LUT_SIZE],
+            weight_lut: vec![0.0 as Float; WEIGHT_LUT_SIZE],
         };
         // initialize levels of MipMap for image
         let n_levels = 1 + (std::cmp::max(resolution.x, resolution.y) as Float).log2() as usize;

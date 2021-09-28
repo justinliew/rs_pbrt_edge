@@ -9,10 +9,10 @@ use crate::core::geometry::{Point2f, Point2i, Vector2f};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::mipmap::{Clampable, ImageWrap, MipMap};
 use crate::core::pbrt::{Float, Spectrum};
-use crate::core::texture::{Texture, TextureMapping2D};
+use crate::core::texture::TextureMapping2D;
 
 // see imagemap.h
-
+#[derive(Serialize, Deserialize)]
 pub struct ImageTexture<T> {
     pub mapping: Box<TextureMapping2D>,
     pub mipmap: Arc<MipMap<T>>,
@@ -94,26 +94,20 @@ where
     }
 }
 
-pub trait ImageTextureConvert<T> {
-    fn convert_out(from: &T, to: &mut T);
-}
-
-impl ImageTextureConvert<Spectrum> for ImageTexture<Spectrum> {
-    fn convert_out(from: &Spectrum, to: &mut Spectrum) {
-        let mut rgb: [Float; 3] = [0.0 as Float; 3];
-        from.to_rgb(&mut rgb);
-        *to = Spectrum::from_rgb(&rgb);
-    }
-}
-
-impl ImageTextureConvert<Float> for ImageTexture<Float> {
-    fn convert_out(from: &Float, to: &mut Float) {
-        *to = *from;
-    }
-}
-
-impl Texture<Float> for ImageTexture<Float> {
-    fn evaluate(&self, si: &SurfaceInteraction) -> Float {
+impl<T> ImageTexture<T>
+where
+    T: std::default::Default
+        + num::Zero
+        + std::clone::Clone
+        + Add<T, Output = T>
+        + AddAssign
+        + Clampable
+        + Copy
+        + Div<Float, Output = T>
+        + Mul<T, Output = T>
+        + Mul<Float, Output = T>,
+{
+    pub fn evaluate(&self, si: &SurfaceInteraction) -> T {
         // Vector2f dstdx, dstdy;
         // Point2f st = mapping->Map(si, &dstdx, &dstdy);
         // Tmemory mem = mipmap->Lookup(st, dstdx, dstdy);
@@ -123,27 +117,8 @@ impl Texture<Float> for ImageTexture<Float> {
         let mut dstdx: Vector2f = Vector2f::default();
         let mut dstdy: Vector2f = Vector2f::default();
         let st: Point2f = self.mapping.map(si, &mut dstdx, &mut dstdy);
-        let mem: Float = self.mipmap.lookup_pnt_vec_vec(st, &mut dstdx, &mut dstdy);
-        let mut ret: Float = 0.0 as Float;
-        ImageTexture::<Float>::convert_out(&mem, &mut ret);
-        ret
-    }
-}
-
-impl Texture<Spectrum> for ImageTexture<Spectrum> {
-    fn evaluate(&self, si: &SurfaceInteraction) -> Spectrum {
-        // Vector2f dstdx, dstdy;
-        // Point2f st = mapping->Map(si, &dstdx, &dstdy);
-        // Tmemory mem = mipmap->Lookup(st, dstdx, dstdy);
-        // Treturn ret;
-        // convertOut(mem, &ret);
-        // return ret;
-        let mut dstdx: Vector2f = Vector2f::default();
-        let mut dstdy: Vector2f = Vector2f::default();
-        let st: Point2f = self.mapping.map(si, &mut dstdx, &mut dstdy);
-        let mem: Spectrum = self.mipmap.lookup_pnt_vec_vec(st, &mut dstdx, &mut dstdy);
-        let mut ret: Spectrum = Spectrum::new(0.0);
-        ImageTexture::<Spectrum>::convert_out(&mem, &mut ret);
+        let mem: T = self.mipmap.lookup_pnt_vec_vec(st, &mut dstdx, &mut dstdy);
+        let mut ret = mem;
         ret
     }
 }

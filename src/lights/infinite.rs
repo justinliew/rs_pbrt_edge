@@ -44,7 +44,7 @@ fn decode_f16(half: u16) -> f32 {
 }
 
 // see infinte.h
-
+#[derive(Serialize, Deserialize)]
 pub struct InfiniteAreaLight {
     // private data (see infinte.h)
     pub lmap: Arc<MipMap<Spectrum>>,

@@ -3,6 +3,8 @@ use std::sync::Arc;
 
 use num::Zero;
 
+use serde::{Deserialize, Serialize};
+
 use crate::core::geometry::{spherical_direction, vec3_abs_dot_vec3f, vec3_dot_vec3f};
 use crate::core::geometry::{Point2f, Vector3f, XYEnum};
 use crate::core::interaction::SurfaceInteraction;
@@ -19,23 +21,24 @@ use crate::core::reflection::{
 };
 use crate::core::texture::Texture;
 
+#[derive(Serialize, Deserialize)]
 pub struct DisneyMaterial {
-    color: Arc<dyn Texture<Spectrum> + Send + Sync>,
+    color: Arc<Texture<Spectrum>>,
     // base_color: Arc<TextureFloat>,
-    metallic: Arc<dyn Texture<Float> + Send + Sync>,
-    eta: Arc<dyn Texture<Float> + Send + Sync>,
-    roughness: Arc<dyn Texture<Float> + Send + Sync>,
-    specular_tint: Arc<dyn Texture<Float> + Send + Sync>,
-    anisotropic: Arc<dyn Texture<Float> + Send + Sync>,
-    sheen: Arc<dyn Texture<Float> + Send + Sync>,
-    sheen_tint: Arc<dyn Texture<Float> + Send + Sync>,
-    clearcoat: Arc<dyn Texture<Float> + Send + Sync>,
-    clearcoat_gloss: Arc<dyn Texture<Float> + Send + Sync>,
-    spec_trans: Arc<dyn Texture<Float> + Send + Sync>,
-    scatter_distance: Arc<dyn Texture<Spectrum> + Send + Sync>,
-    flatness: Arc<dyn Texture<Float> + Send + Sync>,
-    diff_trans: Arc<dyn Texture<Float> + Send + Sync>,
-    bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>>,
+    metallic: Arc<Texture<Float>>,
+    eta: Arc<Texture<Float>>,
+    roughness: Arc<Texture<Float>>,
+    specular_tint: Arc<Texture<Float>>,
+    anisotropic: Arc<Texture<Float>>,
+    sheen: Arc<Texture<Float>>,
+    sheen_tint: Arc<Texture<Float>>,
+    clearcoat: Arc<Texture<Float>>,
+    clearcoat_gloss: Arc<Texture<Float>>,
+    spec_trans: Arc<Texture<Float>>,
+    scatter_distance: Arc<Texture<Spectrum>>,
+    flatness: Arc<Texture<Float>>,
+    diff_trans: Arc<Texture<Float>>,
+    bump_map: Option<Arc<Texture<Float>>>,
     thin: bool,
 }
 

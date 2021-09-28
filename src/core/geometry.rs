@@ -172,6 +172,8 @@
 use std::cell::Cell;
 use std::f32::consts::PI;
 
+use serde::{Deserialize, Serialize};
+
 use std::ops;
 use std::ops::{Index, IndexMut};
 use std::sync::Arc;
@@ -217,7 +219,7 @@ pub enum XYZEnum {
     Z = 2,
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct Vector2f {
     pub x: Float,
     pub y: Float,
@@ -394,7 +396,7 @@ pub fn vec2_doti(v1: &Vector2i, v2: &Vector2i) -> i32 {
     v1.x * v2.x + v1.y * v2.y
 }
 
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Vector3f {
     pub x: Float,
     pub y: Float,
@@ -425,7 +427,7 @@ impl Vector3f {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Vector3i {
     pub x: i32,
     pub y: i32,
@@ -804,7 +806,7 @@ pub fn vec3_coordinate_system(v1: &Vector3f, v2: &mut Vector3f, v3: &mut Vector3
     *v3 = vec3_cross_vec3(v1, &*v2);
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct Point2f {
     pub x: Float,
     pub y: Float,
@@ -816,7 +818,7 @@ impl Point2f {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct Point2i {
     pub x: i32,
     pub y: i32,
@@ -1025,7 +1027,7 @@ pub fn bnd2_expand(b: &Bounds2f, delta: Float) -> Bounds2f {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct Point3f {
     pub x: Float,
     pub y: Float,
@@ -1606,7 +1608,7 @@ pub fn spherical_phi(v: &Vector3f) -> Float {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Normal3f {
     pub x: Float,
     pub y: Float,
@@ -1873,7 +1875,7 @@ pub fn nrm_faceforward_nrm(n: &Normal3f, n2: &Normal3f) -> Normal3f {
 // pub type Bounds3f = Bounds3<Float>;
 // pub type Bounds3i = Bounds3<i32>;
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct Bounds2f {
     pub p_min: Point2f,
     pub p_max: Point2f,
@@ -1987,7 +1989,7 @@ pub fn bnd2_intersect_bnd2i(b1: &Bounds2i, b2: &Bounds2i) -> Bounds2i {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Bounds3f {
     pub p_min: Point3f,
     pub p_max: Point3f,

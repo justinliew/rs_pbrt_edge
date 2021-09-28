@@ -2,8 +2,10 @@
 //! compute the beam transmittance along a given ray.
 
 // std
+use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
 use std::sync::Arc;
+
 // pbrt
 use crate::core::geometry::{spherical_direction_vec3, vec3_coordinate_system, vec3_dot_vec3f};
 use crate::core::geometry::{Point2f, Ray, Vector3f, XYEnum};
@@ -265,8 +267,10 @@ pub struct MeasuredSS {
     pub sigma_a: [Float; 3],
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct NoMedium {}
 
+#[derive(Serialize, Deserialize)]
 pub enum Medium {
     Empty(NoMedium),
     GridDensity(GridDensityMedium),
@@ -327,7 +331,7 @@ impl HenyeyGreenstein {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 pub struct MediumInterface {
     pub inside: Option<Arc<Medium>>,
     pub outside: Option<Arc<Medium>>,

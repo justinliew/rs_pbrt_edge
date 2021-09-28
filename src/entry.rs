@@ -467,9 +467,9 @@ fn parse_line(
     str_buf: String,
     integrator_arg: &Option<String>,
 ) {
-    let msg = format!("parse_line identifier: {}, buf: {}", identifier, str_buf);
-    #[cfg(not(feature = "ecp"))]
-    log(&msg);
+    // let msg = format!("parse_line identifier: {}, buf: {}", identifier, str_buf);
+    // #[cfg(not(feature = "ecp"))]
+    // log(&msg);
     if str_buf == "" {
         // no additional arguments
         match identifier {

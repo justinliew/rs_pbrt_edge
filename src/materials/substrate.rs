@@ -1,5 +1,7 @@
 //std
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
 // pbrt
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
@@ -11,22 +13,23 @@ use crate::core::texture::Texture;
 
 // see substrate.h
 
+#[derive(Serialize, Deserialize)]
 pub struct SubstrateMaterial {
-    pub kd: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.5
-    pub ks: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.5
-    pub nu: Arc<dyn Texture<Float> + Sync + Send>,    // default: 0.1
-    pub nv: Arc<dyn Texture<Float> + Sync + Send>,    // default: 0.1
-    pub bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>>,
+    pub kd: Arc<Texture<Spectrum>>, // default: 0.5
+    pub ks: Arc<Texture<Spectrum>>, // default: 0.5
+    pub nu: Arc<Texture<Float>>,    // default: 0.1
+    pub nv: Arc<Texture<Float>>,    // default: 0.1
+    pub bump_map: Option<Arc<Texture<Float>>>,
     pub remap_roughness: bool,
 }
 
 impl SubstrateMaterial {
     pub fn new(
-        kd: Arc<dyn Texture<Spectrum> + Send + Sync>,
-        ks: Arc<dyn Texture<Spectrum> + Send + Sync>,
-        nu: Arc<dyn Texture<Float> + Sync + Send>,
-        nv: Arc<dyn Texture<Float> + Sync + Send>,
-        bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
+        kd: Arc<Texture<Spectrum>>,
+        ks: Arc<Texture<Spectrum>>,
+        nu: Arc<Texture<Float>>,
+        nv: Arc<Texture<Float>>,
+        bump_map: Option<Arc<Texture<Float>>>,
         remap_roughness: bool,
     ) -> Self {
         SubstrateMaterial {
@@ -39,14 +42,10 @@ impl SubstrateMaterial {
         }
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material> {
-        let kd: Arc<dyn Texture<Spectrum> + Sync + Send> =
-            mp.get_spectrum_texture("Kd", Spectrum::new(0.5));
-        let ks: Arc<dyn Texture<Spectrum> + Sync + Send> =
-            mp.get_spectrum_texture("Ks", Spectrum::new(0.5));
-        let uroughness: Arc<dyn Texture<Float> + Sync + Send> =
-            mp.get_float_texture("uroughness", 0.1);
-        let vroughness: Arc<dyn Texture<Float> + Sync + Send> =
-            mp.get_float_texture("vroughness", 0.1);
+        let kd: Arc<Texture<Spectrum>> = mp.get_spectrum_texture("Kd", Spectrum::new(0.5));
+        let ks: Arc<Texture<Spectrum>> = mp.get_spectrum_texture("Ks", Spectrum::new(0.5));
+        let uroughness: Arc<Texture<Float>> = mp.get_float_texture("uroughness", 0.1);
+        let vroughness: Arc<Texture<Float>> = mp.get_float_texture("vroughness", 0.1);
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
         Arc::new(Material::Substrate(Box::new(SubstrateMaterial::new(

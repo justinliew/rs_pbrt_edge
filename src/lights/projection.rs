@@ -44,6 +44,7 @@ fn decode_f16(half: u16) -> f32 {
 
 // see projection.h
 
+#[derive(Serialize, Deserialize)]
 pub struct ProjectionLight {
     // private data (see projection.h)
     pub projection_map: Option<Arc<MipMap<Spectrum>>>,

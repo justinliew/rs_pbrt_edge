@@ -1,5 +1,7 @@
 //std
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
 // pbrt
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
@@ -11,16 +13,14 @@ use crate::core::texture::Texture;
 // see mirror.h
 
 /// A simple mirror, modeled with perfect specular reflection.
+#[derive(Serialize, Deserialize)]
 pub struct MirrorMaterial {
-    pub kr: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.9
-    pub bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>>,
+    pub kr: Arc<Texture<Spectrum>>, // default: 0.9
+    pub bump_map: Option<Arc<Texture<Float>>>,
 }
 
 impl MirrorMaterial {
-    pub fn new(
-        kr: Arc<dyn Texture<Spectrum> + Send + Sync>,
-        bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
-    ) -> Self {
+    pub fn new(kr: Arc<Texture<Spectrum>>, bump_map: Option<Arc<Texture<Float>>>) -> Self {
         MirrorMaterial { kr, bump_map }
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material> {

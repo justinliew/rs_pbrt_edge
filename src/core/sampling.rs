@@ -13,7 +13,7 @@ use crate::core::rng::FLOAT_ONE_MINUS_EPSILON;
 
 // see sampling.h
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Distribution1D {
     pub func: Vec<Float>,
     pub cdf: Vec<Float>,
@@ -146,7 +146,7 @@ impl Distribution1D {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Distribution2D {
     pub p_conditional_v: Vec<Arc<Distribution1D>>,
     pub p_marginal: Arc<Distribution1D>,

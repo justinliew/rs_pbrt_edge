@@ -1,5 +1,7 @@
 // std
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
 // others
 // use time::PreciseTime;
 use typed_arena::Arena;
@@ -15,7 +17,7 @@ use crate::core::primitive::Primitive;
 
 // see bvh.h
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SplitMethod {
     SAH,
     HLBVH,
@@ -95,7 +97,7 @@ impl Default for BucketInfo {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct LinearBVHNode {
     bounds: Bounds3f,
     // in C++ a union { int primitivesOffset;     // leaf
@@ -107,6 +109,7 @@ pub struct LinearBVHNode {
 }
 
 // BVHAccel -> Aggregate -> Primitive
+#[derive(Serialize, Deserialize)]
 pub struct BVHAccel {
     max_prims_in_node: usize,
     split_method: SplitMethod,

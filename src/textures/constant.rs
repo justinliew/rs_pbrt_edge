@@ -1,9 +1,9 @@
 // pbrt
 use crate::core::interaction::SurfaceInteraction;
-use crate::core::texture::Texture;
 
 // see constant.h
 
+#[derive(Serialize, Deserialize)]
 pub struct ConstantTexture<T> {
     pub value: T,
 }
@@ -14,8 +14,8 @@ impl<T: Copy> ConstantTexture<T> {
     }
 }
 
-impl<T: Copy> Texture<T> for ConstantTexture<T> {
-    fn evaluate(&self, _si: &SurfaceInteraction) -> T {
+impl<T: Copy> ConstantTexture<T> {
+    pub fn evaluate(&self, _si: &SurfaceInteraction) -> T {
         self.value
     }
 }

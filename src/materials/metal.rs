@@ -1,5 +1,7 @@
 //std
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
 // pbrt
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
@@ -84,24 +86,25 @@ pub const COPPER_K: [Float; COPPER_SAMPLES as usize] = [
     5.485_625, 5.717,
 ];
 
+#[derive(Serialize, Deserialize)]
 pub struct MetalMaterial {
-    pub eta: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: copper
-    pub k: Arc<dyn Texture<Spectrum> + Sync + Send>,   // default: copper
-    pub roughness: Arc<dyn Texture<Float> + Sync + Send>, // default: 0.01
-    pub u_roughness: Option<Arc<dyn Texture<Float> + Sync + Send>>,
-    pub v_roughness: Option<Arc<dyn Texture<Float> + Sync + Send>>,
-    pub bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>>,
+    pub eta: Arc<Texture<Spectrum>>,    // default: copper
+    pub k: Arc<Texture<Spectrum>>,      // default: copper
+    pub roughness: Arc<Texture<Float>>, // default: 0.01
+    pub u_roughness: Option<Arc<Texture<Float>>>,
+    pub v_roughness: Option<Arc<Texture<Float>>>,
+    pub bump_map: Option<Arc<Texture<Float>>>,
     pub remap_roughness: bool,
 }
 
 impl MetalMaterial {
     pub fn new(
-        eta: Arc<dyn Texture<Spectrum> + Send + Sync>,
-        k: Arc<dyn Texture<Spectrum> + Send + Sync>,
-        roughness: Arc<dyn Texture<Float> + Sync + Send>,
-        u_roughness: Option<Arc<dyn Texture<Float> + Sync + Send>>,
-        v_roughness: Option<Arc<dyn Texture<Float> + Sync + Send>>,
-        bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
+        eta: Arc<Texture<Spectrum>>,
+        k: Arc<Texture<Spectrum>>,
+        roughness: Arc<Texture<Float>>,
+        u_roughness: Option<Arc<Texture<Float>>>,
+        v_roughness: Option<Arc<Texture<Float>>>,
+        bump_map: Option<Arc<Texture<Float>>>,
         remap_roughness: bool,
     ) -> Self {
         MetalMaterial {
@@ -117,17 +120,13 @@ impl MetalMaterial {
     pub fn create(mp: &mut TextureParams) -> Arc<Material> {
         let copper_n: Spectrum =
             Spectrum::from_sampled(&COPPER_WAVELENGTHS, &COPPER_N, COPPER_SAMPLES as i32);
-        let eta: Arc<dyn Texture<Spectrum> + Send + Sync> =
-            mp.get_spectrum_texture("eta", copper_n);
+        let eta: Arc<Texture<Spectrum>> = mp.get_spectrum_texture("eta", copper_n);
         let copper_k: Spectrum =
             Spectrum::from_sampled(&COPPER_WAVELENGTHS, &COPPER_K, COPPER_SAMPLES as i32);
-        let k: Arc<dyn Texture<Spectrum> + Send + Sync> = mp.get_spectrum_texture("k", copper_k);
-        let roughness: Arc<dyn Texture<Float> + Send + Sync> =
-            mp.get_float_texture("roughness", 0.01 as Float);
-        let u_roughness: Option<Arc<dyn Texture<Float> + Send + Sync>> =
-            mp.get_float_texture_or_null("uroughness");
-        let v_roughness: Option<Arc<dyn Texture<Float> + Send + Sync>> =
-            mp.get_float_texture_or_null("vroughness");
+        let k: Arc<Texture<Spectrum>> = mp.get_spectrum_texture("k", copper_k);
+        let roughness: Arc<Texture<Float>> = mp.get_float_texture("roughness", 0.01 as Float);
+        let u_roughness: Option<Arc<Texture<Float>>> = mp.get_float_texture_or_null("uroughness");
+        let v_roughness: Option<Arc<Texture<Float>>> = mp.get_float_texture_or_null("vroughness");
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
         Arc::new(Material::Metal(Box::new(MetalMaterial::new(

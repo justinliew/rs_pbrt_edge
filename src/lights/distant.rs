@@ -1,7 +1,9 @@
 // std
+use serde::{Deserialize, Serialize};
 use std::cell::Cell;
 use std::f32::consts::PI;
 use std::sync::RwLock;
+
 // pbrt
 use crate::core::geometry::vec3_coordinate_system;
 use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
@@ -14,7 +16,7 @@ use crate::core::scene::Scene;
 use crate::core::transform::Transform;
 
 // see distant.h
-
+#[derive(Serialize, Deserialize)]
 pub struct DistantLight {
     // private data (see distant.h)
     pub l: Spectrum,

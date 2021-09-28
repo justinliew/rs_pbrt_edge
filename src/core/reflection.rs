@@ -61,7 +61,7 @@ fn fr_schlick_spectrum(r0: Spectrum, cos_theta: Float) -> Spectrum {
 
 // see reflection.h
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct FourierBSDFTable {
     pub eta: Float,
     pub m_max: i32,

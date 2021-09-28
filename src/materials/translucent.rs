@@ -1,5 +1,7 @@
 //std
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
 // pbrt
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
@@ -12,24 +14,25 @@ use crate::core::reflection::{
 };
 use crate::core::texture::Texture;
 
+#[derive(Serialize, Deserialize)]
 pub struct TranslucentMaterial {
-    pub kd: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.25
-    pub ks: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.25
-    pub roughness: Arc<dyn Texture<Float> + Sync + Send>, // default: 0.1
-    pub reflect: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.5
-    pub transmit: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.5
-    pub bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>>,
+    pub kd: Arc<Texture<Spectrum>>,       // default: 0.25
+    pub ks: Arc<Texture<Spectrum>>,       // default: 0.25
+    pub roughness: Arc<Texture<Float>>,   // default: 0.1
+    pub reflect: Arc<Texture<Spectrum>>,  // default: 0.5
+    pub transmit: Arc<Texture<Spectrum>>, // default: 0.5
+    pub bump_map: Option<Arc<Texture<Float>>>,
     pub remap_roughness: bool, // default: true
 }
 
 impl TranslucentMaterial {
     pub fn new(
-        kd: Arc<dyn Texture<Spectrum> + Send + Sync>,
-        ks: Arc<dyn Texture<Spectrum> + Send + Sync>,
-        roughness: Arc<dyn Texture<Float> + Sync + Send>,
-        reflect: Arc<dyn Texture<Spectrum> + Send + Sync>,
-        transmit: Arc<dyn Texture<Spectrum> + Send + Sync>,
-        bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
+        kd: Arc<Texture<Spectrum>>,
+        ks: Arc<Texture<Spectrum>>,
+        roughness: Arc<Texture<Float>>,
+        reflect: Arc<Texture<Spectrum>>,
+        transmit: Arc<Texture<Spectrum>>,
+        bump_map: Option<Arc<Texture<Float>>>,
         remap_roughness: bool,
     ) -> Self {
         TranslucentMaterial {

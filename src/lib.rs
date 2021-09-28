@@ -4,6 +4,9 @@ use wasm_bindgen::prelude::*;
 #[macro_use]
 extern crate impl_ops;
 
+#[macro_use]
+extern crate serde;
+
 pub mod accelerators;
 pub mod blockqueue;
 pub mod cameras;

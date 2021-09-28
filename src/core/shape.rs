@@ -19,6 +19,7 @@ use crate::shapes::triangle::Triangle;
 
 // see shape.h
 
+#[derive(Serialize, Deserialize)]
 pub enum Shape {
     Crv(Curve),
     Clndr(Cylinder),

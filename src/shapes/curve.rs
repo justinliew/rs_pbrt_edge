@@ -17,14 +17,14 @@ use crate::core::transform::Transform;
 
 // see curve.h
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum CurveType {
     Flat,
     Cylinder,
     Ribbon,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct CurveCommon {
     pub curve_type: CurveType,
     pub cp_obj: [Point3f; 4],
@@ -69,7 +69,7 @@ impl CurveCommon {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Curve {
     pub common: Arc<CurveCommon>,
     pub u_min: Float,

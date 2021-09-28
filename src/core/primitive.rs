@@ -2,7 +2,9 @@
 //! geometry processing and shading subsystems of pbrt.
 
 // std
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
 // pbrt
 use crate::accelerators::bvh::BVHAccel;
 use crate::accelerators::kdtreeaccel::KdTreeAccel;
@@ -18,6 +20,7 @@ use crate::core::transform::{AnimatedTransform, Transform};
 
 // see primitive.h
 
+#[derive(Serialize, Deserialize)]
 pub enum Primitive {
     Geometric(Box<GeometricPrimitive>),
     Transformed(Box<TransformedPrimitive>),
@@ -96,7 +99,7 @@ impl Primitive {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct GeometricPrimitive {
     pub shape: Arc<Shape>,
     pub material: Option<Arc<Material>>,
@@ -203,6 +206,7 @@ impl GeometricPrimitive {
     }
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct TransformedPrimitive {
     pub primitive: Arc<Primitive>,
     pub primitive_to_world: AnimatedTransform,

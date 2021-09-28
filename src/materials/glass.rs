@@ -1,5 +1,7 @@
 //std
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
 // pbrt
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
@@ -16,24 +18,25 @@ use crate::core::texture::Texture;
 
 /// Perfect or glossy specular reflection and transmission, weighted
 /// by Fresnel terms for accurate angular-dependent variation.
+#[derive(Serialize, Deserialize)]
 pub struct GlassMaterial {
-    pub kr: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 1.0
-    pub kt: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 1.0
-    pub u_roughness: Arc<dyn Texture<Float> + Sync + Send>, // default: 0.0
-    pub v_roughness: Arc<dyn Texture<Float> + Sync + Send>, // default: 0.0
-    pub index: Arc<dyn Texture<Float> + Sync + Send>,
-    pub bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>>,
+    pub kr: Arc<Texture<Spectrum>>,       // default: 1.0
+    pub kt: Arc<Texture<Spectrum>>,       // default: 1.0
+    pub u_roughness: Arc<Texture<Float>>, // default: 0.0
+    pub v_roughness: Arc<Texture<Float>>, // default: 0.0
+    pub index: Arc<Texture<Float>>,
+    pub bump_map: Option<Arc<Texture<Float>>>,
     pub remap_roughness: bool,
 }
 
 impl GlassMaterial {
     pub fn new(
-        kr: Arc<dyn Texture<Spectrum> + Sync + Send>,
-        kt: Arc<dyn Texture<Spectrum> + Sync + Send>,
-        u_roughness: Arc<dyn Texture<Float> + Sync + Send>,
-        v_roughness: Arc<dyn Texture<Float> + Sync + Send>,
-        index: Arc<dyn Texture<Float> + Send + Sync>,
-        bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
+        kr: Arc<Texture<Spectrum>>,
+        kt: Arc<Texture<Spectrum>>,
+        u_roughness: Arc<Texture<Float>>,
+        v_roughness: Arc<Texture<Float>>,
+        index: Arc<Texture<Float>>,
+        bump_map: Option<Arc<Texture<Float>>>,
         remap_roughness: bool,
     ) -> Self {
         GlassMaterial {
@@ -53,8 +56,7 @@ impl GlassMaterial {
         let roughv = mp.get_float_texture("vroughness", 0.0 as Float);
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
-        let eta_option: Option<Arc<dyn Texture<Float> + Send + Sync>> =
-            mp.get_float_texture_or_null("eta");
+        let eta_option: Option<Arc<Texture<Float>>> = mp.get_float_texture_or_null("eta");
         if let Some(ref eta) = eta_option {
             Arc::new(Material::Glass(Box::new(GlassMaterial::new(
                 kr,
@@ -66,8 +68,7 @@ impl GlassMaterial {
                 remap_roughness,
             ))))
         } else {
-            let eta: Arc<dyn Texture<Float> + Send + Sync> =
-                mp.get_float_texture("index", 1.5 as Float);
+            let eta: Arc<Texture<Float>> = mp.get_float_texture("index", 1.5 as Float);
             Arc::new(Material::Glass(Box::new(GlassMaterial::new(
                 kr,
                 kt,

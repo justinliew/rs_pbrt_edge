@@ -16,7 +16,7 @@ use crate::core::transform::Transform;
 
 // see cylinder.h
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Cylinder {
     pub radius: Float,
     pub z_min: Float,

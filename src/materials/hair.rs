@@ -1,6 +1,8 @@
 //std
+use serde::{Deserialize, Serialize};
 use std::f32::consts::PI;
 use std::sync::Arc;
+
 // pbrt
 use crate::core::geometry::{Point2f, Vector3f, XYEnum};
 use crate::core::interaction::SurfaceInteraction;
@@ -13,27 +15,28 @@ use crate::core::reflection::{Bsdf, Bxdf, BxdfType};
 use crate::core::texture::Texture;
 use crate::textures::constant::ConstantTexture;
 
+#[derive(Serialize, Deserialize)]
 pub struct HairMaterial {
-    pub sigma_a: Option<Arc<dyn Texture<Spectrum> + Sync + Send>>,
-    pub color: Option<Arc<dyn Texture<Spectrum> + Sync + Send>>,
-    pub eumelanin: Option<Arc<dyn Texture<Float> + Sync + Send>>,
-    pub pheomelanin: Option<Arc<dyn Texture<Float> + Sync + Send>>,
-    pub eta: Arc<dyn Texture<Float> + Sync + Send>, // default: 1.55
-    pub beta_m: Arc<dyn Texture<Float> + Sync + Send>, // default: 0.3
-    pub beta_n: Arc<dyn Texture<Float> + Sync + Send>, // default: 0.3
-    pub alpha: Arc<dyn Texture<Float> + Sync + Send>, // default: 2.0
+    pub sigma_a: Option<Arc<Texture<Spectrum>>>,
+    pub color: Option<Arc<Texture<Spectrum>>>,
+    pub eumelanin: Option<Arc<Texture<Float>>>,
+    pub pheomelanin: Option<Arc<Texture<Float>>>,
+    pub eta: Arc<Texture<Float>>,    // default: 1.55
+    pub beta_m: Arc<Texture<Float>>, // default: 0.3
+    pub beta_n: Arc<Texture<Float>>, // default: 0.3
+    pub alpha: Arc<Texture<Float>>,  // default: 2.0
 }
 
 impl HairMaterial {
     pub fn new(
-        sigma_a: Option<Arc<dyn Texture<Spectrum> + Send + Sync>>,
-        color: Option<Arc<dyn Texture<Spectrum> + Send + Sync>>,
-        eumelanin: Option<Arc<dyn Texture<Float> + Send + Sync>>,
-        pheomelanin: Option<Arc<dyn Texture<Float> + Send + Sync>>,
-        eta: Arc<dyn Texture<Float> + Send + Sync>,
-        beta_m: Arc<dyn Texture<Float> + Send + Sync>,
-        beta_n: Arc<dyn Texture<Float> + Send + Sync>,
-        alpha: Arc<dyn Texture<Float> + Send + Sync>,
+        sigma_a: Option<Arc<Texture<Spectrum>>>,
+        color: Option<Arc<Texture<Spectrum>>>,
+        eumelanin: Option<Arc<Texture<Float>>>,
+        pheomelanin: Option<Arc<Texture<Float>>>,
+        eta: Arc<Texture<Float>>,
+        beta_m: Arc<Texture<Float>>,
+        beta_n: Arc<Texture<Float>>,
+        alpha: Arc<Texture<Float>>,
     ) -> Self {
         HairMaterial {
             sigma_a,
@@ -47,14 +50,11 @@ impl HairMaterial {
         }
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material> {
-        let mut sigma_a: Option<Arc<dyn Texture<Spectrum> + Send + Sync>> =
+        let mut sigma_a: Option<Arc<Texture<Spectrum>>> =
             mp.get_spectrum_texture_or_null("sigma_a");
-        let color: Option<Arc<dyn Texture<Spectrum> + Send + Sync>> =
-            mp.get_spectrum_texture_or_null("color");
-        let eumelanin: Option<Arc<dyn Texture<Float> + Send + Sync>> =
-            mp.get_float_texture_or_null("eumelanin");
-        let pheomelanin: Option<Arc<dyn Texture<Float> + Send + Sync>> =
-            mp.get_float_texture_or_null("pheomelanin");
+        let color: Option<Arc<Texture<Spectrum>>> = mp.get_spectrum_texture_or_null("color");
+        let eumelanin: Option<Arc<Texture<Float>>> = mp.get_float_texture_or_null("eumelanin");
+        let pheomelanin: Option<Arc<Texture<Float>>> = mp.get_float_texture_or_null("pheomelanin");
         if let Some(_sigma_a) = sigma_a.clone() {
             if let Some(_color) = color.clone() {
                 println!("WARNING: Ignoring \"color\" parameter since \"sigma_a\" was provided.");
@@ -103,9 +103,9 @@ impl HairMaterial {
             }
         } else {
             // default: brown-ish hair.
-            sigma_a = Some(Arc::new(ConstantTexture::new(
+            sigma_a = Some(Arc::new(Texture::Constant(ConstantTexture::new(
                 HairBSDF::sigma_a_from_concentration(1.3 as Float, 0.0 as Float),
-            )));
+            ))));
         }
         let eta = mp.get_float_texture("eta", 1.55);
         let beta_m = mp.get_float_texture("beta_m", 0.3);

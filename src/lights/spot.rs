@@ -17,7 +17,7 @@ use crate::core::transform::Transform;
 
 // see spot.h
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct SpotLight {
     // private data (see spot.h)
     pub p_light: Point3f,

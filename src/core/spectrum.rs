@@ -3,6 +3,7 @@
 //! only requires changing the **Spectrum** implementation.
 
 // std
+use serde::{Deserialize, Serialize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub};
 // others
 use num::Zero;
@@ -1526,7 +1527,7 @@ pub enum RGBEnum {
     Blue = 2,
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone, Serialize, Deserialize)]
 pub struct RGBSpectrum {
     pub c: [Float; 3],
 }
