@@ -43,10 +43,7 @@ pub struct KdAccelNode {
 impl KdAccelNode {
     pub fn init_leaf(&mut self, prim_nums: &[usize], np: usize, primitive_indices: &mut Vec<i32>) {
         self.pub_union.flags = 3;
-        let n_prims: i32;
-        unsafe {
-            n_prims = self.pub_union.flags;
-        }
+        let n_prims: i32 = self.pub_union.flags;
         self.pub_union.flags = n_prims | ((np as i32) << 2);
         // store primitive ids for leaf node
         match np {
@@ -63,45 +60,25 @@ impl KdAccelNode {
     pub fn init_interior(&mut self, axis: i32, ac: i32, s: Float) {
         self.priv_union.split = s;
         self.pub_union.flags = axis;
-        let above_child: i32;
-        unsafe {
-            above_child = self.pub_union.flags;
-        }
+        let above_child: i32 = self.pub_union.flags;
         self.pub_union.flags = above_child | (ac << 2);
     }
     pub fn split_pos(&self) -> Float {
-        let split: Float;
-        unsafe {
-            split = self.priv_union.split;
-        }
-        split
+        self.priv_union.split
     }
     pub fn n_primitives(&self) -> i32 {
-        let n_prims: i32;
-        unsafe {
-            n_prims = self.pub_union.flags;
-        }
+        let n_prims = self.pub_union.flags;
         n_prims >> 2
     }
     pub fn split_axis(&self) -> i32 {
-        let flags: i32;
-        unsafe {
-            flags = self.pub_union.flags;
-        }
-        flags & 3
+		self.pub_union.flags & 3
     }
     pub fn is_leaf(&self) -> bool {
-        let flags: i32;
-        unsafe {
-            flags = self.pub_union.flags;
-        }
+        let flags = self.pub_union.flags;
         (flags & 3) == 3
     }
     pub fn above_child(&self) -> i32 {
-        let above_child: i32;
-        unsafe {
-            above_child = self.pub_union.flags;
-        }
+        let above_child = self.pub_union.flags;
         above_child >> 2
     }
 }
@@ -583,9 +560,7 @@ impl KdTreeAccel {
                 let n_primitives: i32 = node.n_primitives();
                 if n_primitives == 1 {
                     let one_primitive: i32;
-                    unsafe {
                         one_primitive = node.priv_union.flags;
-                    }
                     let p: &Arc<Primitive> = &self.primitives[one_primitive as usize];
                     // check one primitive inside leaf node
                     if p.intersect(ray, isect) {
@@ -594,9 +569,7 @@ impl KdTreeAccel {
                 } else {
                     for i in 0..n_primitives {
                         let primitive_indices_offset: i32;
-                        unsafe {
                             primitive_indices_offset = node.priv_union.flags;
-                        }
                         let index: usize = self.primitive_indices
                             [(primitive_indices_offset + i) as usize]
                             as usize;
@@ -648,9 +621,7 @@ impl KdTreeAccel {
                 let n_primitives: i32 = node.n_primitives();
                 if n_primitives == 1 {
                     let one_primitive: i32;
-                    unsafe {
                         one_primitive = node.priv_union.flags;
-                    }
                     let p: &Arc<Primitive> = &self.primitives[one_primitive as usize];
                     if p.intersect_p(ray) {
                         return true;
@@ -658,9 +629,7 @@ impl KdTreeAccel {
                 } else {
                     for i in 0..n_primitives {
                         let primitive_indices_offset: i32;
-                        unsafe {
                             primitive_indices_offset = node.priv_union.flags;
-                        }
                         let primitive_index: usize = self.primitive_indices
                             [(primitive_indices_offset + i) as usize]
                             as usize;

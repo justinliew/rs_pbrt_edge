@@ -86,20 +86,23 @@ function getArrayU8FromWasm0(ptr, len) {
 }
 /**
 * @param {number} tile_size
+* @param {string} filename
 * @param {string} data
 * @returns {Uint8Array}
 */
-export function lib_entry(tile_size, data) {
+export function lib_entry(tile_size, filename, data) {
     try {
         const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-        var ptr0 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var ptr0 = passStringToWasm0(filename, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
-        wasm.lib_entry(retptr, tile_size, ptr0, len0);
+        var ptr1 = passStringToWasm0(data, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len1 = WASM_VECTOR_LEN;
+        wasm.lib_entry(retptr, tile_size, ptr0, len0, ptr1, len1);
         var r0 = getInt32Memory0()[retptr / 4 + 0];
         var r1 = getInt32Memory0()[retptr / 4 + 1];
-        var v1 = getArrayU8FromWasm0(r0, r1).slice();
+        var v2 = getArrayU8FromWasm0(r0, r1).slice();
         wasm.__wbindgen_free(r0, r1 * 1);
-        return v1;
+        return v2;
     } finally {
         wasm.__wbindgen_add_to_stack_pointer(16);
     }

@@ -25,18 +25,20 @@ pub mod media;
 pub mod samplers;
 pub mod shapes;
 pub mod textures;
+pub mod backend;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct RenderTileInfo {
     pub x: u32,
     pub y: u32,
     pub tile_size: i32,
-    pub data: String,
+    pub filename: String,
     // pub dimi: usize,
     // pub dimj: usize,
     // pub height: usize,
     // pub width: usize,
 }
+
 //#[cfg(feature = "ecp")]
 #[fastly::main]
 fn main(mut req: Request) -> Result<Response, Error> {
@@ -63,7 +65,10 @@ fn main(mut req: Request) -> Result<Response, Error> {
 			let b = req.into_body();
 			let s = b.into_string();
 			let input : RenderTileInfo = serde_json::from_str(&s).unwrap();
-			let output = entry::entry(false, input.tile_size, Some(input.x), Some(input.y), &input.data);
+			let main_file = format!("{}/main.pbrt", input.filename);
+			let msg = format!("Couldn't get content from {}", main_file);
+			let data = backend::get_content_string(&main_file).expect(&msg);
+			let output = entry::entry(false, input.tile_size, Some(input.x), Some(input.y), &input.filename, &data);
 			println!("Elapsed: {}", now.elapsed().as_millis());
 			Ok(Response::from_status(StatusCode::OK)
 				.with_header("Access-Control-Allow-Origin", HeaderValue::from_static("*"))

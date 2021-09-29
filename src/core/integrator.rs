@@ -66,17 +66,17 @@ impl Integrator {
         tile_size: i32,
         x: Option<u32>,
         y: Option<u32>,
-        data: &str,
+        filename: &str,
     ) -> Option<Vec<u8>> {
         match self {
             // JLTODO
             Integrator::BDPT(integrator) => {
-                integrator.render(scene, num_threads, tile_size, collector, x, y, data)
+                integrator.render(scene, num_threads, tile_size, collector, x, y, filename)
             }
             // Integrator::MLT(integrator) => integrator.render(scene, num_threads),
             // Integrator::SPPM(integrator) => integrator.render(scene, num_threads),
             Integrator::Sampler(integrator) => {
-                integrator.render(scene, num_threads, tile_size, collector, x, y, data)
+                integrator.render(scene, num_threads, tile_size, collector, x, y, filename)
             }
             _ => None,
         }
@@ -222,7 +222,7 @@ impl SamplerIntegrator {
         collector: bool,
         x_start: Option<u32>,
         y_start: Option<u32>,
-        data: &str,
+        filename: &str,
     ) -> Option<Vec<u8>> {
         let film = self.get_camera().get_film();
         let sample_bounds: Bounds2i = film.get_sample_bounds();
@@ -246,9 +246,7 @@ impl SamplerIntegrator {
             while let Some((x, y)) = bq.next() {
                 #[cfg(not(feature = "ecp"))]
                 #[cfg(not(test))]
-                unsafe {
-                    http_request(x, y, tile_size, data.to_string());
-                }
+				http_request(x, y, tile_size, filename.to_string());
 
                 #[cfg(test)]
                 {

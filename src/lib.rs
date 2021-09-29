@@ -251,6 +251,6 @@ mod tests {
 
 #[cfg(not(feature = "ecp"))]
 #[wasm_bindgen]
-pub fn lib_entry(tile_size: i32, data: String) -> Vec<u8> {
-    entry::entry(true, tile_size, None, None, &data)
+pub fn lib_entry(tile_size: i32, filename: String, data: String) -> Vec<u8> {
+    entry::entry(true, tile_size, None, None, &filename, &data)
 }

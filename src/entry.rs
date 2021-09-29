@@ -1,7 +1,5 @@
 use pest_derive::*;
 
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
-
 #[derive(Parser)]
 #[grammar = "../examples/rs_pbrt.pest"]
 struct PbrtParser;
@@ -47,40 +45,6 @@ extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     pub fn log(s: &str);
 }
-
-/// Parse a PBRT scene file (extension .pbrt) and render it.
-#[derive(StructOpt)]
-struct Cli {
-    /// Specify an image crop window <x0 x1 y0 y1>
-    #[structopt(long, default_value = "0.0")]
-    cropx0: f32,
-    /// Specify an image crop window <x0 x1 y0 y1>
-    #[structopt(long, default_value = "1.0")]
-    cropx1: f32,
-    /// Specify an image crop window <x0 x1 y0 y1>
-    #[structopt(long, default_value = "0.0")]
-    cropy0: f32,
-    /// Specify an image crop window <x0 x1 y0 y1>
-    #[structopt(long, default_value = "1.0")]
-    cropy1: f32,
-    /// ao, directlighting, whitted, path, bdpt, mlt, sppm, volpath
-    #[structopt(short = "i", long = "integrator")]
-    integrator: Option<String>,
-    /// use specified number of threads for rendering
-    #[structopt(short = "t", long = "nthreads", default_value = "0")]
-    nthreads: u8,
-    /// pixel samples
-    #[structopt(short = "s", long = "samples", default_value = "0")]
-    samples: u32,
-    /// The path to the file to read
-    #[structopt(parse(from_os_str))]
-    path: std::path::PathBuf,
-}
-
-// Accelerator
-// CoordinateSystem
-// Identity
-// TransformTimes
 
 #[allow(dead_code)]
 fn pbrt_bool_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, bool) {
@@ -1022,17 +986,10 @@ pub fn entry(
     tile_size: i32,
     x: Option<u32>,
     y: Option<u32>,
-    data: &str,
+    filename: &str,
+	data: &str,
 ) -> Vec<u8> {
     // handle command line options
-    // let args = Cli::from_args();
-    // let pixelsamples: u32 = args.samples;
-    // let number_of_threads: u8 = args.nthreads;
-    // let cropx0: f32 = args.cropx0;
-    // let cropx1: f32 = args.cropx1;
-    // let cropy0: f32 = args.cropy0;
-    // let cropy1: f32 = args.cropy1;
-    // let num_cores = num_cpus::get();
 
     let git_describe = option_env!("GIT_DESCRIBE").unwrap_or("unknown");
     // println!("pbrt version {} ({})", VERSION, git_describe);
@@ -1043,7 +1000,7 @@ pub fn entry(
     let mut ecp_state = EcpState::default();
     ecp_state.set_is_collector(collector);
     ecp_state.set_tile_size(tile_size);
-    ecp_state.set_data(data);
+    ecp_state.set_filename(filename);
     if !collector {
         ecp_state.x = x;
         ecp_state.y = y;

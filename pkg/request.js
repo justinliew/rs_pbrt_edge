@@ -1,5 +1,21 @@
 var endpoint = 0;
 
+export function get_content_web(path) {
+	var xhttp = new XMLHttpRequest();
+
+	var url = "content/" + scene_id + "/main.pbrt";
+	xhttp.open("GET", url, true);
+	xhttp.responseType = "arraybuffer";
+	xhttp.send(null);
+	var arraybuffer = xhttp.response;
+	if (arraybuffer) {
+		var byteArray = new Uint8Array(arraybuffer);
+		var data = new TextDecoder().decode(byteArray);
+		return data;
+	}
+	return null;
+}
+
 export function http_request(x, y, tile_size, data) {
 	var xhttp = new XMLHttpRequest();
 	xhttp.onload = function(oEvent) {
@@ -35,21 +51,20 @@ export function http_request(x, y, tile_size, data) {
 		}
 	};
 
-	var url;
-	if (endpoint == 0) {
-		url = "https://pbrt-worker.edgecompute.app/rendertile";
-		endpoint = 1;
-	} else if (endpoint == 1) {
-		url = "https://pbrt-worker2.edgecompute.app/rendertile";
-		endpoint = 2;
-	} else if (endpoint == 2) {
-		url = "https://pbrt-worker3.edgecompute.app/rendertile";
-		endpoint = 3;
-	} else {
-		url = "https://pbrt-worker4.edgecompute.app/rendertile";
-		endpoint = 0;
-	}
-
+	var url = "https://pbrt-worker.edgecompute.app/rendertile";
+	// if (endpoint == 0) {
+	// 	url = "https://pbrt-worker.edgecompute.app/rendertile";
+	// 	endpoint = 1;
+	// } else if (endpoint == 1) {
+	// 	url = "https://pbrt-worker2.edgecompute.app/rendertile";
+	// 	endpoint = 2;
+	// } else if (endpoint == 2) {
+	// 	url = "https://pbrt-worker3.edgecompute.app/rendertile";
+	// 	endpoint = 3;
+	// } else {
+	// 	url = "https://pbrt-worker4.edgecompute.app/rendertile";
+	// 	endpoint = 0;
+	// }
 	xhttp.open("POST", url, true);
 	xhttp.responseType = "arraybuffer";
 
@@ -57,7 +72,7 @@ export function http_request(x, y, tile_size, data) {
 	body["x"] = x;
 	body["y"] = y;
 	body["tile_size"] = tile_size;
-	body["data"] = data;
+	body["filename"] = data;
 	var body_str = JSON.stringify(body);
 
     xhttp.send(body_str);

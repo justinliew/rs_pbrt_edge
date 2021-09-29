@@ -1050,9 +1050,7 @@ impl BDPTIntegrator {
                     while let Some((x, y)) = bq.next() {
                         #[cfg(not(feature = "ecp"))]
                         #[cfg(not(test))]
-                        unsafe {
-                            http_request(x, y, tile_size, data.to_string());
-                        }
+						http_request(x, y, tile_size, data.to_string());
 
                         #[cfg(test)]
                         {

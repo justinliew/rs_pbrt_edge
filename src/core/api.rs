@@ -128,7 +128,7 @@ pub struct EcpState {
     tile_size: i32,
     pub x: Option<u32>,
     pub y: Option<u32>,
-    pub data: String,
+    pub filename: String,
 }
 
 impl Default for EcpState {
@@ -139,7 +139,7 @@ impl Default for EcpState {
             collector: None,
             x: None,
             y: None,
-            data: "".to_string(),
+            filename: "".to_string(),
         }
     }
 }
@@ -162,8 +162,8 @@ impl EcpState {
         self.tile_size = s;
     }
 
-    pub fn set_data(&mut self, data: &str) {
-        self.data = data.to_string();
+    pub fn set_filename(&mut self, filename: &str) {
+        self.filename = filename.to_string();
     }
 
     pub fn set_output(&mut self, data: &Vec<u8>) {
@@ -2430,7 +2430,7 @@ pub fn pbrt_cleanup(
             ecp_state.tile_size,
             ecp_state.x,
             ecp_state.y,
-            &ecp_state.data,
+            &ecp_state.filename,
         );
         #[cfg(ecp)]
         println!("pbrt_cleanup: {}", now.elapsed().as_millis());
