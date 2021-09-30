@@ -431,7 +431,6 @@ fn parse_line(
     str_buf: String,
     integrator_arg: &Option<String>,
 ) {
-    // let msg = format!("parse_line identifier: {}, buf: {}", identifier, str_buf);
     // #[cfg(not(feature = "ecp"))]
     // log(&msg);
     if str_buf == "" {
@@ -482,13 +481,11 @@ fn parse_line(
         }
     } else {
         let statement = String::from(identifier) + " " + &str_buf;
-        // println!("DEBUG: {:?}", &statement);
         let pairs = PbrtParser::parse(Rule::name_and_or_params, &statement)
             .expect("unsuccessful parse")
             .next()
             .unwrap();
         for inner_pair in pairs.into_inner() {
-            // println!("DEBUG: {:?}", inner_pair.as_rule());
             match inner_pair.as_rule() {
                 Rule::type_params => {
                     // identifier "type" parameter-list
@@ -890,7 +887,9 @@ fn parse_data(
     append: &str,
     integrator_arg: &Option<String>,
 ) {
-    let pairs = PbrtParser::parse(Rule::pbrt, &data)
+	api_state.search_directory = Some(Box::new(PathBuf::from(&ecp_state.filename)));
+
+	let pairs = PbrtParser::parse(Rule::pbrt, &data)
         .expect("unsuccessful parse")
         .next()
         .unwrap();

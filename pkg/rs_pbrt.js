@@ -145,15 +145,15 @@ async function init(input) {
     }
     const imports = {};
     imports.wbg = {};
+    imports.wbg.__wbg_log_e6c34f7a51e0a901 = function(arg0, arg1) {
+        console.log(getStringFromWasm0(arg0, arg1));
+    };
     imports.wbg.__wbg_httprequest_38e26ba6a476840f = function(arg0, arg1, arg2, arg3, arg4) {
         try {
             http_request(arg0 >>> 0, arg1 >>> 0, arg2, getStringFromWasm0(arg3, arg4));
         } finally {
             wasm.__wbindgen_free(arg3, arg4);
         }
-    };
-    imports.wbg.__wbg_log_e6c34f7a51e0a901 = function(arg0, arg1) {
-        console.log(getStringFromWasm0(arg0, arg1));
     };
 
     if (typeof input === 'string' || (typeof Request === 'function' && input instanceof Request) || (typeof URL === 'function' && input instanceof URL)) {

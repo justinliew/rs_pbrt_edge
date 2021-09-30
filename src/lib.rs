@@ -20,6 +20,8 @@ pub mod media;
 pub mod samplers;
 pub mod shapes;
 pub mod textures;
+pub mod backend;
+
 
 #[cfg(test)]
 mod tests {

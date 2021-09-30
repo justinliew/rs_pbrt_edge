@@ -9,29 +9,38 @@
 <body>
 	<canvas id="framebuffer" width="500" height="500"></canvas>
 	<div id="controls">
-		Tile Size: <input id="tile_size" value="64" />
+		<!-- Tile Size: <input id="tile_size" value="100" /> -->
 		<button id="render_button">Render</button>
 		<select id="scenes">
 			<option value="cornell">Cornell Box</option>
 			<option value="killeroo">Killeroo</option>
+			<!-- <option value="ganesha">Ganesha</option>
+			<option value="classroom">Classroom</option>
+			<option value="caustic_class">Classroom</option>
+			<option value="breakfast">Breakfast</option> -->
 		</select>
 	</div>
 	<script type="module">
 
-		function get_scene(scene_id) {
+		const tile_sizes = [100, 175, 180, 320, 250, 128];
+		const dimension = [500, 700, 720, 1280, 1000, 512];
+
+		function get_scene(scene_id, index) {
 			var xhttp = new XMLHttpRequest();
 			xhttp.onload = function (oEvent) {
 				var arraybuffer = xhttp.response;
 				if (arraybuffer) {
-					let tile_size = +document.getElementById("tile_size").value;
+					// let tile_size = +document.getElementById("tile_size").value;
+					let tile_size = tile_sizes[index];
+					let dim = dimension[index];
 
 					var byteArray = new Uint8Array(arraybuffer);
-					var string = new TextDecoder().decode(byteArray);
-					let output = lib_entry(tile_size, string);
+					var data = new TextDecoder().decode(byteArray);
+					let output = lib_entry(tile_size, scene_id, data);
 
 					var canvas = document.getElementById("framebuffer");
-					canvas.width = 700; // TODO get the width and height from lib_entry in the future
-					canvas.height = 700;
+					canvas.width = dim; // TODO get the width and height from lib_entry in the future
+					canvas.height = dim;
 				}
 			};
 
@@ -45,8 +54,9 @@
 		init()
 			.then(() => {
 				document.getElementById("render_button").addEventListener("click", () => {
-					let scene_value = document.getElementById("scenes").value;
-					get_scene(scene_value);
+					let scene_id = document.getElementById("scenes").value;
+					let index = document.getElementById("scenes").selectedIndex;
+					get_scene(scene_id, index);
 				});
 			});
 	</script>

@@ -1,19 +1,31 @@
 var endpoint = 0;
 
+const downloadToFile = (content, filename) => {
+	const a = document.createElement('a');
+	const file = new Blob([content], {type: 'application/x-binary; charset=x-user-defined'});
+	
+	a.href= URL.createObjectURL(file);
+	a.download = filename;
+	a.click();
+  
+	  URL.revokeObjectURL(a.href);
+  };
+
+
 export function get_content_web(path) {
 	var xhttp = new XMLHttpRequest();
-
-	var url = "content/" + scene_id + "/main.pbrt";
-	xhttp.open("GET", url, true);
 	xhttp.responseType = "arraybuffer";
-	xhttp.send(null);
-	var arraybuffer = xhttp.response;
-	if (arraybuffer) {
-		var byteArray = new Uint8Array(arraybuffer);
-		var data = new TextDecoder().decode(byteArray);
-		return data;
+	var response;
+	//	xhttp.overrideMimeType('application/x-binary; charset=x-user-defined');
+	xhttp.onload = function(oEvent) {
+		response = xhttp.response;
 	}
-	return null;
+
+	var url = "content/" + path;
+	xhttp.open("GET", url, true);
+	xhttp.send(null);
+
+	return response;
 }
 
 export function http_request(x, y, tile_size, data) {
@@ -24,8 +36,6 @@ export function http_request(x, y, tile_size, data) {
 			var canvas = document.getElementById("framebuffer");
 			var ctx = canvas.getContext('2d');
 			var byteArray = new Uint8Array(arraybuffer);
-			var array_len = byteArray.length;
-			var diff = byteArray.length - (tile_size*tile_size*3);
 
 			var dim = tile_size;
 			var data = new Uint8ClampedArray(4 * dim * dim);
@@ -51,20 +61,21 @@ export function http_request(x, y, tile_size, data) {
 		}
 	};
 
-	var url = "https://pbrt-worker.edgecompute.app/rendertile";
-	// if (endpoint == 0) {
-	// 	url = "https://pbrt-worker.edgecompute.app/rendertile";
-	// 	endpoint = 1;
-	// } else if (endpoint == 1) {
-	// 	url = "https://pbrt-worker2.edgecompute.app/rendertile";
-	// 	endpoint = 2;
-	// } else if (endpoint == 2) {
-	// 	url = "https://pbrt-worker3.edgecompute.app/rendertile";
-	// 	endpoint = 3;
-	// } else {
-	// 	url = "https://pbrt-worker4.edgecompute.app/rendertile";
-	// 	endpoint = 0;
-	// }
+//	var url = "https://pbrt-worker.edgecompute.app/rendertile";
+	var url;
+	if (endpoint == 0) {
+		url = "https://pbrt-worker.edgecompute.app/rendertile";
+		endpoint = 1;
+	} else if (endpoint == 1) {
+		url = "https://pbrt-worker2.edgecompute.app/rendertile";
+		endpoint = 2;
+	} else if (endpoint == 2) {
+		url = "https://pbrt-worker3.edgecompute.app/rendertile";
+		endpoint = 3;
+	} else {
+		url = "https://pbrt-worker4.edgecompute.app/rendertile";
+		endpoint = 0;
+	}
 	xhttp.open("POST", url, true);
 	xhttp.responseType = "arraybuffer";
 

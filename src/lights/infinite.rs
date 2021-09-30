@@ -3,6 +3,19 @@ use std::cell::Cell;
 use std::f32::consts::PI;
 use std::io::BufReader;
 use std::sync::{Arc, RwLock};
+
+#[cfg(not(feature = "ecp"))]
+use wasm_bindgen::prelude::*;
+
+#[cfg(not(feature = "ecp"))]
+#[wasm_bindgen]
+extern "C" {
+    // Use `js_namespace` here to bind `console.log(..)` instead of just
+    // `log(..)`
+    #[wasm_bindgen(js_namespace = console)]
+    pub fn log(s: &str);
+}
+
 // others
 #[cfg(feature = "openexr")]
 use half::f16;
@@ -21,6 +34,7 @@ use crate::core::sampling::concentric_sample_disk;
 use crate::core::sampling::Distribution2D;
 use crate::core::scene::Scene;
 use crate::core::transform::Transform;
+use crate::backend::get_content_binary;
 
 // see https://stackoverflow.com/questions/36008434/how-can-i-decode-f16-to-f32-using-only-the-stable-standard-library
 #[cfg(feature = "openexr")]
@@ -179,8 +193,9 @@ impl InfiniteAreaLight {
     ) -> Self {
         // read texel data from _texmap_ and initialize _Lmap_
         if texmap != "" {
-            let file = std::fs::File::open(texmap).unwrap();
-            let reader = BufReader::new(file);
+//            let file = std::fs::File::open(texmap).unwrap();
+			let data = get_content_binary(&texmap).unwrap();
+            let reader = BufReader::new(data.as_slice());
             let img_result = image::hdr::HdrDecoder::with_strictness(reader, false);
             if img_result.is_ok() {
                 if let Ok(hdr) = img_result {
@@ -245,6 +260,9 @@ impl InfiniteAreaLight {
                     }
                 }
             } else {
+				let msg = format!("Error Infinite Light: {:?}", img_result);
+				#[cfg(not(feature = "ecp"))]
+				log(&msg);
                 println!("WARNING: InfiniteAreaLight::new() ... no OpenEXR support !!!");
             }
         }

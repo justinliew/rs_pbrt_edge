@@ -8,6 +8,8 @@ use std::path::PathBuf;
 use std::string::String;
 use std::sync::Arc;
 use std::vec::Vec;
+use std::str;
+
 // others
 use ply_rs::parser;
 use ply_rs::ply;
@@ -20,6 +22,7 @@ use crate::core::texture::Texture;
 use crate::core::transform::Transform;
 use crate::shapes::triangle::{Triangle, TriangleMesh};
 use crate::textures::constant::ConstantTexture;
+use crate::backend::get_content_binary;
 
 pub fn create_ply_mesh<S: BuildHasher>(
     o2w: &Transform,
@@ -31,17 +34,20 @@ pub fn create_ply_mesh<S: BuildHasher>(
 ) -> Vec<Arc<Shape>> {
     let mut filename: String = params.find_one_string("filename", String::new());
     if let Some(ref search_directory) = search_directory {
-        let mut path_buf: PathBuf = PathBuf::from("/");
+        let mut path_buf: PathBuf = PathBuf::from("");
         path_buf.push(search_directory);
         path_buf.push(filename);
         filename = String::from(path_buf.to_str().unwrap());
-    }
-    let result = File::open(&filename);
-    if result.is_err() {
-        panic!("Couldn't open PLY file {:?}", filename);
-    }
-    let f = result.unwrap();
-    let mut buf_reader = BufReader::new(f);
+   }
+	let data = get_content_binary(&filename).unwrap();
+	let mut buf_reader = BufReader::new(data.as_slice());
+	//     let result = File::open(&filename);
+//     if result.is_err() {
+// //        panic!("Couldn't open PLY file {:?}", filename);
+// 		return vec![];
+//     }
+//     let f = result.unwrap();
+//    let mut buf_reader = BufReader::new(f);
     let p = parser::Parser::<ply::DefaultElement>::new();
     // header
     let result = p.read_header(&mut buf_reader);
