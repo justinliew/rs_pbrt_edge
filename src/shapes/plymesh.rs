@@ -34,12 +34,18 @@ pub fn create_ply_mesh<S: BuildHasher>(
 ) -> Vec<Arc<Shape>> {
     let mut filename: String = params.find_one_string("filename", String::new());
     if let Some(ref search_directory) = search_directory {
-        let mut path_buf: PathBuf = PathBuf::from("");
+        let mut path_buf: PathBuf = PathBuf::from("/");
         path_buf.push(search_directory);
         path_buf.push(filename);
         filename = String::from(path_buf.to_str().unwrap());
    }
-	let data = get_content_binary(&filename).unwrap();
+   let res = get_content_binary(&filename);
+   if res.is_err() {
+	   println!("Error getting content {}: {:?}", filename, res);
+	   return vec![];
+   }
+
+   let data = res.expect("Couldn't get data for plymesh");
 	let mut buf_reader = BufReader::new(data.as_slice());
 	//     let result = File::open(&filename);
 //     if result.is_err() {
@@ -52,7 +58,7 @@ pub fn create_ply_mesh<S: BuildHasher>(
     // header
     let result = p.read_header(&mut buf_reader);
     if result.is_err() {
-        panic!("Unable to read the header of PLY file  {:?}", filename);
+		return vec![];
     }
     let header = result.unwrap();
     // println!("header = {:?}", header);
@@ -223,7 +229,6 @@ pub fn create_ply_mesh<S: BuildHasher>(
     // for i in 0..p.len() {
     //     println!("{:?}: {:?}", i, p[i]);
     // }
-    // println!("tm_vertex_indices = {:?}", tm_vertex_indices);
     let mut n_ws: Vec<Normal3f> = Vec::new();
     if !n.is_empty() {
         assert!(n.len() == p.len());
@@ -299,5 +304,7 @@ pub fn create_ply_mesh<S: BuildHasher>(
         )));
         shapes.push(triangle.clone());
     }
+	println!("plymesh done {}", filename);
+
     shapes
 }
