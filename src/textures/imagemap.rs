@@ -10,6 +10,20 @@ use crate::core::interaction::SurfaceInteraction;
 use crate::core::mipmap::{Clampable, ImageWrap, MipMap};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::texture::TextureMapping2D;
+use crate::backend::get_content_binary;
+
+#[cfg(not(feature = "ecp"))]
+use wasm_bindgen::prelude::*;
+
+#[cfg(not(feature = "ecp"))]
+#[wasm_bindgen]
+extern "C" {
+    // Use `js_namespace` here to bind `console.log(..)` instead of just
+    // `log(..)`
+    #[wasm_bindgen(js_namespace = console)]
+    pub fn log(s: &str);
+}
+
 
 // see imagemap.h
 #[derive(Serialize, Deserialize)]
@@ -41,10 +55,11 @@ where
         gamma: bool,
         convert: F,
     ) -> ImageTexture<T> {
-        let path = Path::new(&filename);
-        let img_result: ImageResult<DynamicImage> = image::open(path);
+		let data = get_content_binary(&filename).unwrap();
+        let img_result: ImageResult<DynamicImage> = image::load_from_memory_with_format(&data, image::ImageFormat::Png);
         if img_result.is_err() {
-            panic!("Error reading \"{}\"", filename);
+			let mipmap = Arc::new(MipMap::new(Point2i::default(), &vec![], do_trilinear, max_aniso, wrap_mode));
+			return ImageTexture {mapping, mipmap};
         }
         let buf = img_result.unwrap();
         let rgb = buf.to_rgb8();
