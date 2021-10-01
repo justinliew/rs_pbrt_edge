@@ -7,23 +7,22 @@
 </head>
 
 <body>
-	<canvas id="framebuffer" width="500" height="500"></canvas>
 	<div id="controls">
 		<!-- Tile Size: <input id="tile_size" value="100" /> -->
 		<button id="render_button">Render</button>
 		<select id="scenes">
 			<option value="cornell">Cornell Box</option>
 			<option value="killeroo">Killeroo</option>
-			<!-- <option value="ganesha">Ganesha</option>
-			<option value="classroom">Classroom</option>
-			<option value="caustic_class">Classroom</option>
-			<option value="breakfast">Breakfast</option> -->
+			<option value="teapot">Teapot</option>
+			<option value="veach-mis">Veach MIS</option>
 		</select>
+		<div id="progress"></div>
 	</div>
+	<canvas id="framebuffer" width="500" height="500" style="border:1px solid #000000;"></canvas>
 	<script type="module">
 
-		const tile_sizes = [100, 175, 180, 320, 250, 128];
-		const dimension = [500, 700, 720, 1280, 1000, 512];
+		const tile_sizes = [100, 175, 180, 320];
+		const dimension = [500, 700, 720, 1280];
 
 		function get_scene(scene_id, index) {
 			var xhttp = new XMLHttpRequest();
@@ -53,7 +52,9 @@
 		import init, { lib_entry } from "./pkg/rs_pbrt.js";
 		init()
 			.then(() => {
+				document.getElementById('progress').innerText = "Idle";
 				document.getElementById("render_button").addEventListener("click", () => {
+					document.getElementById('progress').innerText = "Rendering";
 					let scene_id = document.getElementById("scenes").value;
 					let index = document.getElementById("scenes").selectedIndex;
 					get_scene(scene_id, index);

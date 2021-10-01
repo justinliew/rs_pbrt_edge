@@ -130,6 +130,7 @@ impl BVHAccel {
             nodes: Vec::new(),
         });
         let num_prims = bvh.primitives.len();
+		println!("bvh {}", num_prims);
         if num_prims == 0_usize {
             let unwrapped = Arc::try_unwrap(bvh);
             return unwrapped.ok().unwrap();
@@ -140,10 +141,9 @@ impl BVHAccel {
             *item = BVHPrimitiveInfo::new(i, world_bound);
         }
         // TODO: if (splitMethod == SplitMethod::HLBVH)
-        let arena: Arena<BVHBuildNode> = Arena::with_capacity(1024 * 1024);
+        let arena: Arena<BVHBuildNode> = Arena::with_capacity(1024 * 1024 / 64);
         let mut total_nodes: usize = 0;
         let mut ordered_prims: Vec<Arc<Primitive>> = Vec::with_capacity(num_prims);
-        // println!("BVHAccel::recursive_build(..., {}, ...)", num_prims);
         // let start = PreciseTime::now();
         let root = BVHAccel::recursive_build(
             bvh, // instead of self
@@ -155,15 +155,12 @@ impl BVHAccel {
             &mut ordered_prims,
         );
         // let end = PreciseTime::now();
-        // println!("{} seconds for building BVH ...", start.to(end));
         // flatten first
         let mut nodes = vec![LinearBVHNode::default(); total_nodes];
         let mut offset: usize = 0;
-        // println!("BVHAccel::flatten_bvh_tree(...)");
         // let start = PreciseTime::now();
         BVHAccel::flatten_bvh_tree(root, &mut nodes, &mut offset);
         // let end = PreciseTime::now();
-        // println!("{} seconds for flattening BVH ...", start.to(end));
         assert!(nodes.len() == total_nodes);
         // primitives.swap(orderedPrims);
         let bvh_ordered_prims = Arc::new(BVHAccel {

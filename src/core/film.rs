@@ -675,7 +675,12 @@ impl Film {
         let mut pid = 0;
         for pixel in &tile_bounds {
             // merge _pixel_ into _Film::pixels_
-            let idx = tile.get_pixel_index(pixel.x, pixel.y);
+			let px = clamp_t(pixel.x, 0, pixel.x);
+			let py = clamp_t(pixel.y, 0, pixel.y);
+            let idx = tile.get_pixel_index(px,py);
+			if idx >= tile.pixels.len() {
+				println!("We are about to panic. {} {} -> {} {} gives us {} > {}. Bounds is {:?}", x, y, pixel.x, pixel.y, idx, tile.pixels.len(), tile_bounds);
+			}
             let tile_pixel = &tile.pixels[idx];
             let mut merge_pixel = Pixel::default();
             let mut xyz: [Float; 3] = [0.0; 3];

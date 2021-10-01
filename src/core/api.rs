@@ -84,9 +84,9 @@ use crate::samplers::random::RandomSampler;
 use crate::samplers::sobol::SobolSampler;
 use crate::samplers::stratified::StratifiedSampler;
 use crate::samplers::zerotwosequence::ZeroTwoSequenceSampler;
-use crate::shapes::curve::create_curve_shape;
-use crate::shapes::cylinder::Cylinder;
-use crate::shapes::disk::Disk;
+// use crate::shapes::curve::create_curve_shape;
+// use crate::shapes::cylinder::Cylinder;
+// use crate::shapes::disk::Disk;
 use crate::shapes::loopsubdiv::loop_subdivide;
 use crate::shapes::nurbs::nurbs_evaluate_surface;
 use crate::shapes::nurbs::Homogeneous3;
@@ -1883,58 +1883,58 @@ fn get_shapes_and_materials(
         let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
         shapes.push(sphere);
         materials.push(mtl);
-    } else if api_state.param_set.name == "cylinder" {
-        let radius: Float = api_state.param_set.find_one_float("radius", 1.0);
-        let z_min: Float = api_state.param_set.find_one_float("zmin", -radius);
-        let z_max: Float = api_state.param_set.find_one_float("zmax", radius);
-        let phi_max: Float = api_state.param_set.find_one_float("phimax", 360.0 as Float);
-        let cylinder = Arc::new(Shape::Clndr(Cylinder::new(
-            obj_to_world,
-            world_to_obj,
-            false,
-            radius,
-            z_min,
-            z_max,
-            phi_max,
-        )));
-        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
-        shapes.push(cylinder);
-        materials.push(mtl);
-    } else if api_state.param_set.name == "disk" {
-        let height: Float = api_state.param_set.find_one_float("height", 0.0);
-        let radius: Float = api_state.param_set.find_one_float("radius", 1.0);
-        let inner_radius: Float = api_state.param_set.find_one_float("innerradius", 0.0);
-        let phi_max: Float = api_state.param_set.find_one_float("phimax", 360.0);
-        let disk = Arc::new(Shape::Dsk(Disk::new(
-            obj_to_world,
-            world_to_obj,
-            false,
-            height,
-            radius,
-            inner_radius,
-            phi_max,
-        )));
-        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
-        shapes.push(disk);
-        materials.push(mtl);
-    } else if api_state.param_set.name == "cone" {
+    // } else if api_state.param_set.name == "cylinder" {
+    //     let radius: Float = api_state.param_set.find_one_float("radius", 1.0);
+    //     let z_min: Float = api_state.param_set.find_one_float("zmin", -radius);
+    //     let z_max: Float = api_state.param_set.find_one_float("zmax", radius);
+    //     let phi_max: Float = api_state.param_set.find_one_float("phimax", 360.0 as Float);
+    //     let cylinder = Arc::new(Shape::Clndr(Cylinder::new(
+    //         obj_to_world,
+    //         world_to_obj,
+    //         false,
+    //         radius,
+    //         z_min,
+    //         z_max,
+    //         phi_max,
+    //     )));
+    //     let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
+    //     shapes.push(cylinder);
+    //     materials.push(mtl);
+    // } else if api_state.param_set.name == "disk" {
+    //     let height: Float = api_state.param_set.find_one_float("height", 0.0);
+    //     let radius: Float = api_state.param_set.find_one_float("radius", 1.0);
+    //     let inner_radius: Float = api_state.param_set.find_one_float("innerradius", 0.0);
+    //     let phi_max: Float = api_state.param_set.find_one_float("phimax", 360.0);
+    //     let disk = Arc::new(Shape::Dsk(Disk::new(
+    //         obj_to_world,
+    //         world_to_obj,
+    //         false,
+    //         height,
+    //         radius,
+    //         inner_radius,
+    //         phi_max,
+    //     )));
+    //     let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
+    //     shapes.push(disk);
+    //     materials.push(mtl);
+	} else if api_state.param_set.name == "cone" {
         println!("TODO: CreateConeShape");
     } else if api_state.param_set.name == "paraboloid" {
         println!("TODO: CreateParaboloidShape");
     } else if api_state.param_set.name == "hyperboloid" {
         println!("TODO: CreateHyperboloidShape");
-    } else if api_state.param_set.name == "curve" {
-        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
-        let curve_shapes: Vec<Arc<Shape>> = create_curve_shape(
-            &obj_to_world,
-            &world_to_obj,
-            false, // reverse_orientation
-            &api_state.param_set,
-        );
-        for shape in curve_shapes {
-            shapes.push(shape.clone());
-            materials.push(mtl.clone());
-        }
+    // } else if api_state.param_set.name == "curve" {
+    //     let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
+    //     let curve_shapes: Vec<Arc<Shape>> = create_curve_shape(
+    //         &obj_to_world,
+    //         &world_to_obj,
+    //         false, // reverse_orientation
+    //         &api_state.param_set,
+    //     );
+    //     for shape in curve_shapes {
+    //         shapes.push(shape.clone());
+    //         materials.push(mtl.clone());
+    //     }
     } else if api_state.param_set.name == "trianglemesh" {
         let vi = api_state.param_set.find_int("indices");
         let p = api_state.param_set.find_point3f("P");
@@ -2281,22 +2281,22 @@ fn get_shapes_and_materials(
 }
 
 fn print_params(params: &ParamSet) {
-    for p in &params.strings {
-        if p.n_values == 1_usize {
-            println!("  \"string {}\" [\"{}\"]", p.name, p.values[0]);
-        }
-    }
-    for p in &params.bools {
-        if p.n_values == 1_usize {
-            println!("  \"bool {}\" [{}]", p.name, p.values[0]);
-        } else {
-            print!("  \"bool {}\" [ ", p.name);
-            for i in 0..p.n_values {
-                print!("{} ", p.values[i]);
-            }
-            println!("]");
-        }
-    }
+    // for p in &params.strings {
+    //     if p.n_values == 1_usize {
+    //         println!("  \"string {}\" [\"{}\"]", p.name, p.values[0]);
+    //     }
+    // }
+    // for p in &params.bools {
+    //     if p.n_values == 1_usize {
+    //         println!("  \"bool {}\" [{}]", p.name, p.values[0]);
+    //     } else {
+    //         print!("  \"bool {}\" [ ", p.name);
+    //         for i in 0..p.n_values {
+    //             print!("{} ", p.values[i]);
+    //         }
+    //         println!("]");
+    //     }
+    // }
     for p in &params.ints {
         if p.n_values == 1_usize {
             println!("  \"integer {}\" [{}]", p.name, p.values[0]);
@@ -2308,66 +2308,66 @@ fn print_params(params: &ParamSet) {
             println!("]");
         }
     }
-    for p in &params.floats {
-        if p.n_values == 1_usize {
-            println!("  \"float {}\" [{}]", p.name, p.values[0]);
-        } else {
-            print!("  \"float {}\" [ ", p.name);
-            for i in 0..p.n_values {
-                print!("{} ", p.values[i]);
-            }
-            println!("]");
-        }
-    }
-    for p in &params.point3fs {
-        if p.n_values == 1_usize {
-            println!(
-                "  \"point {}\" [{} {} {}]",
-                p.name, p.values[0].x, p.values[0].y, p.values[0].z
-            );
-        } else {
-            println!("  \"point {}\" [", p.name);
-            for i in 0..p.n_values {
-                println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
-            }
-            println!("  ]");
-        }
-    }
-    for p in &params.vector3fs {
-        if p.n_values == 1_usize {
-            println!(
-                "  \"vector {}\" [{} {} {}]",
-                p.name, p.values[0].x, p.values[0].y, p.values[0].z
-            );
-        }
-    }
-    for p in &params.normals {
-        if p.n_values == 1_usize {
-            println!(
-                "  \"normal {}\" [{} {} {}]",
-                p.name, p.values[0].x, p.values[0].y, p.values[0].z
-            );
-        } else {
-            println!("  \"normal {}\" [", p.name);
-            for i in 0..p.n_values {
-                println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
-            }
-            println!("  ]");
-        }
-    }
-    for p in &params.spectra {
-        if p.n_values == 1_usize {
-            println!(
-                "  \"rgb {}\" [{} {} {}]",
-                p.name, p.values[0].c[0], p.values[0].c[1], p.values[0].c[2]
-            );
-        }
-    }
-    for p in &params.textures {
-        if p.n_values == 1_usize {
-            println!("  \"texture {}\" \"{}\"", p.name, p.values[0]);
-        }
-    }
+    // for p in &params.floats {
+    //     if p.n_values == 1_usize {
+    //         println!("  \"float {}\" [{}]", p.name, p.values[0]);
+    //     } else {
+    //         print!("  \"float {}\" [ ", p.name);
+    //         for i in 0..p.n_values {
+    //             print!("{} ", p.values[i]);
+    //         }
+    //         println!("]");
+    //     }
+    // }
+    // for p in &params.point3fs {
+    //     if p.n_values == 1_usize {
+    //         println!(
+    //             "  \"point {}\" [{} {} {}]",
+    //             p.name, p.values[0].x, p.values[0].y, p.values[0].z
+    //         );
+    //     } else {
+    //         println!("  \"point {}\" [", p.name);
+    //         for i in 0..p.n_values {
+    //             println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
+    //         }
+    //         println!("  ]");
+    //     }
+    // }
+    // for p in &params.vector3fs {
+    //     if p.n_values == 1_usize {
+    //         println!(
+    //             "  \"vector {}\" [{} {} {}]",
+    //             p.name, p.values[0].x, p.values[0].y, p.values[0].z
+    //         );
+    //     }
+    // }
+    // for p in &params.normals {
+    //     if p.n_values == 1_usize {
+    //         println!(
+    //             "  \"normal {}\" [{} {} {}]",
+    //             p.name, p.values[0].x, p.values[0].y, p.values[0].z
+    //         );
+    //     } else {
+    //         println!("  \"normal {}\" [", p.name);
+    //         for i in 0..p.n_values {
+    //             println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
+    //         }
+    //         println!("  ]");
+    //     }
+    // }
+    // for p in &params.spectra {
+    //     if p.n_values == 1_usize {
+    //         println!(
+    //             "  \"rgb {}\" [{} {} {}]",
+    //             p.name, p.values[0].c[0], p.values[0].c[1], p.values[0].c[2]
+    //         );
+    //     }
+    // }
+    // for p in &params.textures {
+    //     if p.n_values == 1_usize {
+    //         println!("  \"texture {}\" \"{}\"", p.name, p.values[0]);
+    //     }
+    // }
 }
 
 pub fn pbrt_init(
@@ -2402,17 +2402,14 @@ pub fn pbrt_cleanup(
 ) -> Option<Vec<u8>> {
     #[cfg(ecp)]
     let now = Instant::now();
-    // println!("WorldEnd");
-    #[cfg(not(feature = "ecp"))]
-    log("pbrt_cleanup");
-    assert!(
-        api_state.pushed_graphics_states.is_empty(),
-        "Missing end to pbrtAttributeBegin()"
-    );
-    assert!(
-        api_state.pushed_transforms.is_empty(),
-        "Missing end to pbrtTransformBegin()"
-    );
+    // assert!(
+    //     api_state.pushed_graphics_states.is_empty(),
+    //     "Missing end to pbrtAttributeBegin()"
+    // );
+    // assert!(
+    //     api_state.pushed_transforms.is_empty(),
+    //     "Missing end to pbrtTransformBegin()"
+    // );
 
     // MakeIntegrator
     let some_integrator: Option<Box<Integrator>> = api_state
@@ -2421,8 +2418,6 @@ pub fn pbrt_cleanup(
     if let Some(mut integrator) = some_integrator {
         let scene = api_state.render_options.make_scene();
         let num_threads: u8 = api_state.number_of_threads;
-        #[cfg(not(feature = "ecp"))]
-        log("about to render");
         let ret = integrator.render(
             &scene,
             num_threads,

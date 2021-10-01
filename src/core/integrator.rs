@@ -46,6 +46,7 @@ use std::os::raw::{c_char, c_int, c_uint};
 #[wasm_bindgen(raw_module = "./request.js")]
 extern "C" {
     pub fn http_request(x: c_uint, u: c_uint, size: c_int, data: String);
+	pub fn start_render();
 }
 
 // see integrator.h
@@ -68,8 +69,11 @@ impl Integrator {
         y: Option<u32>,
         filename: &str,
     ) -> Option<Vec<u8>> {
+		#[cfg(not(feature = "ecp"))]
+		#[cfg(not(test))]
+		start_render();
+
         match self {
-            // JLTODO
             Integrator::BDPT(integrator) => {
                 integrator.render(scene, num_threads, tile_size, collector, x, y, filename)
             }
@@ -78,7 +82,10 @@ impl Integrator {
             Integrator::Sampler(integrator) => {
                 integrator.render(scene, num_threads, tile_size, collector, x, y, filename)
             }
-            _ => None,
+            _ => {
+				println!("NO RENDERER");
+				None
+			},
         }
     }
 }
@@ -224,6 +231,7 @@ impl SamplerIntegrator {
         y_start: Option<u32>,
         filename: &str,
     ) -> Option<Vec<u8>> {
+		println!("render_tile");
         let film = self.get_camera().get_film();
         let sample_bounds: Bounds2i = film.get_sample_bounds();
         self.preprocess(scene);
@@ -263,8 +271,6 @@ impl SamplerIntegrator {
             let y = y_start.unwrap();
             let film_tile = self.render_tile(x, y, n_tiles, sample_bounds, tile_size, scene, film);
             //            film.merge_film_tile(&film_tile);
-            #[cfg(ecp)]
-            println!("render_tile: {}", now.elapsed().as_millis());
             let tile_image = film.get_tile_image(
                 &film_tile,
                 tile_size,

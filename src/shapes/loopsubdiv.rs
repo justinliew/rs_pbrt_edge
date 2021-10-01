@@ -275,6 +275,9 @@ pub fn loop_subdivide(
     vertex_indices: &[i32],
     p: &[Point3f],
 ) -> Arc<TriangleMesh> {
+
+	#[cfg(not(feature="ecp"))]
+	return Arc::new(TriangleMesh::new(*object_to_world, *world_to_object, reverse_orientation, 0, vec![], 0, vec![], vec![], vec![], vec![], None, None));
     // allocate _LoopSubdiv_ vertices and faces
     let mut verts: Vec<Arc<SDVertex>> = Vec::with_capacity(p.len());
     for item in p {

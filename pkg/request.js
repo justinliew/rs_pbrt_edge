@@ -1,17 +1,5 @@
 var endpoint = 0;
 
-const downloadToFile = (content, filename) => {
-	const a = document.createElement('a');
-	const file = new Blob([content], {type: 'application/x-binary; charset=x-user-defined'});
-	
-	a.href= URL.createObjectURL(file);
-	a.download = filename;
-	a.click();
-  
-	  URL.revokeObjectURL(a.href);
-  };
-
-
 export function get_content_web(path) {
 	var xhttp = new XMLHttpRequest();
 	xhttp.responseType = "arraybuffer";
@@ -28,8 +16,58 @@ export function get_content_web(path) {
 	return response;
 }
 
+var total_requests = 0;
+var completed_requests = 0;
+var start = 0;
+
+export function start_render()
+{
+	total_requests = completed_requests = 0;
+	start = Math.floor(Date.now() / 1000);
+}
+
 export function http_request(x, y, tile_size, data) {
+	total_requests++;
+	document.getElementById('progress').innerText = "Rendering (" + completed_requests + " of " + total_requests + ")";
 	var xhttp = new XMLHttpRequest();
+	xhttp.onreadystatechange = function (oEvent) {
+		if (xhttp.readyState === 4) {
+			completed_requests++;
+			if (total_requests == completed_requests) {
+				var elapsed = Math.floor(Date.now() / 1000) - start;
+				document.getElementById('progress').innerText = "Finished (" + completed_requests + " of " + total_requests + ") in " + elapsed + "secs";
+			} else {
+				document.getElementById('progress').innerText = "Rendering (" + completed_requests + " of " + total_requests + ")";
+			}
+			if (xhttp.status !== 200) {
+				var canvas = document.getElementById("framebuffer");
+				var ctx = canvas.getContext('2d');
+				var dim = tile_size;
+				var data = new Uint8ClampedArray(4 * dim * dim);
+				var index=0;
+				for (var i = 0; i < dim; ++i) {
+					for (var j = 0; j < dim; ++j) {
+						var base = i * dim + j;
+						data[4 * base] = 255;
+						data[4 * base + 1] = 0;
+						data[4 * base + 2] = 0;
+						data[4 * base + 3] = 255;
+					}
+				}
+				var imageData = new ImageData(data, dim, dim);
+				var tempcanvas = document.createElement('canvas');
+				tempcanvas.width = dim;
+				tempcanvas.height = dim;
+				var tempctx = tempcanvas.getContext('2d');
+				tempctx.putImageData(imageData, 0, 0);
+				tempctx.textAlign = 'center';
+				tempctx.fillText('error getting tile', dim/2, dim/2);
+	
+				//			ctx.scale(10,10);
+				ctx.drawImage(tempcanvas, x*dim, y*dim);
+			}
+		}
+	};
 	xhttp.onload = function(oEvent) {
 		var arraybuffer = xhttp.response;
 		if (arraybuffer) {
@@ -61,21 +99,21 @@ export function http_request(x, y, tile_size, data) {
 		}
 	};
 
-//	var url = "https://pbrt-worker.edgecompute.app/rendertile";
-	var url;
-	if (endpoint == 0) {
-		url = "https://pbrt-worker.edgecompute.app/rendertile";
-		endpoint = 1;
-	} else if (endpoint == 1) {
-		url = "https://pbrt-worker2.edgecompute.app/rendertile";
-		endpoint = 2;
-	} else if (endpoint == 2) {
-		url = "https://pbrt-worker3.edgecompute.app/rendertile";
-		endpoint = 3;
-	} else {
-		url = "https://pbrt-worker4.edgecompute.app/rendertile";
-		endpoint = 0;
-	}
+	var url = "https://pbrt-worker.edgecompute.app/rendertile";
+	// var url;
+	// if (endpoint == 0) {
+	// 	url = "https://pbrt-worker.edgecompute.app/rendertile";
+	// 	endpoint = 1;
+	// } else if (endpoint == 1) {
+	// 	url = "https://pbrt-worker2.edgecompute.app/rendertile";
+	// 	endpoint = 2;
+	// } else if (endpoint == 2) {
+	// 	url = "https://pbrt-worker3.edgecompute.app/rendertile";
+	// 	endpoint = 3;
+	// } else {
+	// 	url = "https://pbrt-worker4.edgecompute.app/rendertile";
+	// 	endpoint = 0;
+	// }
 	xhttp.open("POST", url, true);
 	xhttp.responseType = "arraybuffer";
 

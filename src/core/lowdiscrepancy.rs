@@ -1034,6 +1034,10 @@ pub fn sobol_interval_to_index(m: u32, frame: u64, p: Point2i) -> u64 {
     while b > 0_u64 {
         if b & 1 > 0_u64 {
             // add column 2 * m - c.
+			if c as usize >= VD_C_SOBOL_MATRICES_INV[(m-1) as usize].len() {
+				println!("{} >= {} so we are ignoring for VD_C_SOBOL_MATRICES_INV", c, VD_C_SOBOL_MATRICES_INV[(m-1) as usize].len());
+				break;
+			}
             index ^= VD_C_SOBOL_MATRICES_INV[(m - 1) as usize][c as usize];
         }
         b >>= 1;

@@ -1,4 +1,5 @@
 import { http_request } from './request.js';
+import * as __wbg_star0 from './request.js';
 
 let wasm;
 
@@ -155,6 +156,7 @@ async function init(input) {
             wasm.__wbindgen_free(arg3, arg4);
         }
     };
+    imports['./request.js'] = __wbg_star0;
 
     if (typeof input === 'string' || (typeof Request === 'function' && input instanceof Request) || (typeof URL === 'function' && input instanceof URL)) {
         input = fetch(input);

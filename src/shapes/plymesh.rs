@@ -10,6 +10,10 @@ use std::sync::Arc;
 use std::vec::Vec;
 use std::str;
 
+use crate::core::medium::Medium;
+use crate::core::light::Light;
+use crate::core::material::Material;
+
 // others
 use ply_rs::parser;
 use ply_rs::ply;
@@ -304,7 +308,7 @@ pub fn create_ply_mesh<S: BuildHasher>(
         )));
         shapes.push(triangle.clone());
     }
-	println!("plymesh done {}", filename);
+//	println!("plymesh done {} {} {} {} {}", filename, std::mem::size_of::<Shape>(), std::mem::size_of::<Material>(), std::mem::size_of::<Light>(), std::mem::size_of::<Medium>());
 
     shapes
 }

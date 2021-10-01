@@ -27,6 +27,8 @@ pub mod shapes;
 pub mod textures;
 pub mod backend;
 
+use crate::accelerators::bvh::BVHPrimitiveInfo;
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct RenderTileInfo {
     pub x: u32,

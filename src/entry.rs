@@ -7,6 +7,8 @@ struct PbrtParser;
 #[cfg(not(feature = "ecp"))]
 use wasm_bindgen::prelude::*;
 
+use crate::backend::get_content_binary;
+
 // parser
 use pest::Parser;
 
@@ -767,16 +769,22 @@ fn parse_file(
     integrator_arg: &Option<String>,
 ) {
     // println!("FILE = {}", x);
-    let f = File::open(filename.clone()).unwrap();
-    let ip: &Path = Path::new(filename.as_str());
-    if ip.is_relative() {
-        let cp: PathBuf = env::current_dir().unwrap();
-        let pb: PathBuf = cp.join(ip);
-        let search_directory: &Path = pb.as_path().parent().unwrap();
-        // println!("search_directory is {}", search_directory.display());
-        api_state.search_directory = Some(Box::new(PathBuf::from(search_directory)));
-    }
-    let mut reader = BufReader::new(f);
+	let data = get_content_binary(&filename);
+	if data.is_err() {
+		return;
+	}
+	let data = data.unwrap();
+	let mut reader = BufReader::new(data.as_slice());
+    // let f = File::open(filename.clone()).unwrap();
+    // let ip: &Path = Path::new(filename.as_str());
+    // if ip.is_relative() {
+    //     let cp: PathBuf = env::current_dir().unwrap();
+    //     let pb: PathBuf = cp.join(ip);
+    //     let search_directory: &Path = pb.as_path().parent().unwrap();
+    //     // println!("search_directory is {}", search_directory.display());
+    //     api_state.search_directory = Some(Box::new(PathBuf::from(search_directory)));
+    // }
+    // let mut reader = BufReader::new(f);
     let mut str_buf: String = String::default();
     let _num_bytes = reader.read_to_string(&mut str_buf);
     // if num_bytes.is_ok() {
@@ -1005,9 +1013,9 @@ pub fn entry(
         ecp_state.y = y;
     }
 
-    let msg = format!("data: {}", data);
-    #[cfg(not(feature = "ecp"))]
-    log(&msg);
+    // let msg = format!("data: {}", data);
+    // #[cfg(not(feature = "ecp"))]
+    // log(&msg);
 
     parse_data(
         data,
